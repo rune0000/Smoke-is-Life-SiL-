@@ -1,248 +1,334 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>購入履歴</title>
+<meta charset="UTF-8">
+<title>取引覚書</title>
 
-  <!-- フォント -->
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Yuji+Boku&display=swap" rel="stylesheet">
 
-  <style>
-    body{
-      margin:0;
-      padding:0;
-      min-height:100vh;
-      background:radial-gradient(circle at top left,#2a1c14,#0f0b09 70%);
-      font-family:'Oswald',sans-serif;
-      color:#e6d9c8;
-    }
+<style>
+:root{
+  --ink:#eae6dc;
+  --paper:#12110e;
+  --border:#3a2f1c;
+  --gold:#bfa45a;
+  --red:#8b1e1e;
+  --green:#355f4c;
+}
 
-    /* ===== メインカード ===== */
-    .card{
-      max-width:520px;
-      margin:30px 0 30px 30px; /* ← 左寄せ */
-      background:linear-gradient(180deg,#1a120d,#120b08);
-      border:1px solid #3a2a1d;
-      border-radius:18px;
-      box-shadow:
-        0 20px 60px rgba(0,0,0,.75),
-        inset 0 0 30px rgba(255,200,120,.05);
-      padding:26px;
-    }
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.9)),
+    repeating-linear-gradient(
+      90deg,
+      #2a2418 0px,
+      #2a2418 40px,
+      #231e14 40px,
+      #231e14 80px
+    );
+  font-family:"Shippori Mincho","Hiragino Mincho ProN",serif;
+  color:var(--ink);
+  padding:28px;
+}
 
-    h2{
-      text-align:left;
-      font-weight:600;
-      letter-spacing:2px;
-      color:#f5deb3;
-      margin:0 0 20px 0;
-    }
+body.buy-mode{
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.95)),
+    repeating-linear-gradient(
+      90deg,
+      #1f2c26 0px,
+      #1f2c26 40px,
+      #1a241f 40px,
+      #1a241f 80px
+    );
+}
 
-    h3{
-      margin-top:26px;
-      color:#e0c58a;
-      border-bottom:1px solid #3a2a1d;
-      padding-bottom:6px;
-      letter-spacing:1px;
-    }
+/* ===== 帳場 ===== */
+.card{
+  max-width:520px;
+  margin:auto;
+  padding:26px 22px 24px;
+  background:
+    linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95)),
+    repeating-linear-gradient(-45deg,#14130f,#14130f 8px,#10100c 8px,#10100c 16px);
+  border:2px solid var(--border);
+  box-shadow:
+    0 0 0 1px rgba(191,164,90,.25),
+    0 20px 40px rgba(0,0,0,.7);
+}
 
-    label{
-      display:block;
-      margin-bottom:6px;
-      color:#cdbba7;
-      letter-spacing:1px;
-    }
+/* ===== 見出し ===== */
+h2{
+  margin:0;
+  text-align:center;
+  letter-spacing:.35em;
+  color:var(--gold);
+}
 
-    select,input{
-      width:100%;
-      background:#0f0b09;
-      color:#f0e6d8;
-      border:1px solid #3a2a1d;
-      border-radius:10px;
-      padding:10px;
-      font-size:15px;
-      box-sizing:border-box;
-    }
+.subtitle{
+  text-align:center;
+  font-size:11px;
+  opacity:.6;
+  margin:6px 0 18px;
+}
 
-    /* ===== アイテム ===== */
-    .item-row{
-      display:grid;
-      grid-template-columns:140px 120px 120px;
-      gap:8px;
-      align-items:center;
-      margin-top:10px;
-      background:rgba(255,255,255,.02);
-      border:1px solid #2e2118;
-      border-radius:12px;
-      padding:8px;
-      transition:.2s;
-    }
+/* ===== 入力 ===== */
+input{
+  width:100%;
+  height:36px;
+  box-sizing:border-box;
+  padding:6px 8px;
+  background:#0b0a08;
+  border:1px solid #4a3c22;
+  color:var(--ink);
+  font-size:14px;
+}
+input::placeholder{color:#777;}
 
-    .item-row:hover{
-      box-shadow:0 0 0 1px #caa45c inset;
-    }
+.form-group{
+  display:grid;
+  gap:12px;
+  margin-bottom:16px;
+}
 
-    .item-name{
-      color:#f5deb3;
-      letter-spacing:1px;
-    }
+/* ===== 切替 ===== */
+.tabs{
+  display:flex;
+  gap:8px;
+  margin-bottom:16px;
+}
+.tab{
+  flex:1;
+  padding:10px;
+  background:#0e0d0a;
+  border:1px solid #4a3c22;
+  color:#aaa;
+  font-weight:700;
+  cursor:pointer;
+  letter-spacing:.2em;
+}
+.tab.active{
+  background:#1a1408;
+  color:var(--gold);
+  border-color:var(--gold);
+}
 
-    /* ===== 合計 ===== */
-    .total-box{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-top:24px;
-      padding-top:12px;
-      border-top:1px solid #3a2a1d;
-    }
+/* ===== 明細 ===== */
+#items::before{
+  content:"品目 / 単価 / 数";
+  display:grid;
+  grid-template-columns:1fr 110px 70px;
+  gap:10px;
+  font-size:12px;
+  opacity:.6;
+  margin-bottom:6px;
+}
 
-    .total-box span{
-      color:#cdbba7;
-      letter-spacing:1px;
-    }
+.item-row{
+  display:grid;
+  grid-template-columns:1fr 110px 70px;
+  gap:10px;
+  margin-bottom:6px;
+}
 
-    #total{
-      font-size:22px;
-      color:#facc15;
-      text-shadow:0 0 8px rgba(250,204,21,.35);
-    }
+.item-price{text-align:right;}
+.item-qty{text-align:center;}
 
-    /* ===== ボタン ===== */
-    button{
-      width:100%;
-      margin-top:22px;
-      padding:14px;
-      font-size:16px;
-      font-weight:600;
-      color:#2b1c0f;
-      background:linear-gradient(180deg,#f5deb3,#caa45c);
-      border:none;
-      border-radius:14px;
-      cursor:pointer;
-      box-shadow:0 8px 20px rgba(0,0,0,.55);
-      letter-spacing:2px;
-    }
+/* ===== 金額 ===== */
+.total-box{
+  margin-top:18px;
+  padding:14px;
+  border:1px solid #4a3c22;
+  background:#0a0907;
+  display:flex;
+  justify-content:center;
+  gap:16px;
+}
 
-    button:hover{
-      filter:brightness(1.08);
-    }
-  </style>
+#total{
+  font-size:24px;
+  font-weight:900;
+  color:var(--red);
+}
+body.buy-mode #total{color:var(--green);}
+
+/* ===== ボタン ===== */
+button{
+  width:100%;
+  margin-top:18px;
+  padding:14px;
+  background:#120f0a;
+  color:var(--gold);
+  border:2px solid var(--border);
+  font-weight:900;
+  letter-spacing:.25em;
+  cursor:pointer;
+}
+button:active{
+  filter:brightness(.8);
+}
+
+/* ===== 朱印 ===== */
+.stamp{
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) scale(.4) rotate(-8deg);
+  font-size:96px;
+  opacity:0;
+  color:var(--red);
+  animation:stamp .9s ease forwards;
+  pointer-events:none;
+}
+
+@keyframes stamp{
+  0%{opacity:0;transform:translate(-50%,-60%) scale(.3) rotate(-15deg);}
+  40%{opacity:.9;}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.2) rotate(-8deg);}
+}
+</style>
 </head>
+
 <body>
-
 <div class="card">
-  <h2>🚬 Smoke is Life(SiL)</h2>
+  <h2>Smoke is Life(SiL)</h2>
+  <div class="subtitle">― 煙 命 ―</div>
 
-  <form id="reserveForm">
-    <label>名前</label>
-    <select id="name" required></select>
+  <div class="form-group">
+    <input id="shop" placeholder="差配人（任意）">
+    <input id="name" placeholder="通り名">
+  </div>
 
-    <h3>売却アイテム</h3>
-    <div id="items"></div>
+  <div class="tabs">
+    <button class="tab active" data-mode="sell">渡す</button>
+    <button class="tab" data-mode="buy">受ける</button>
+  </div>
 
-    <div class="total-box">
-      <span>合計金額</span>
-      <strong id="total">¥0</strong>
-    </div>
+  <div id="items"></div>
 
-    <button type="submit">送信</button>
-  </form>
+  <div class="total-box">
+    <span id="totalLabel">金</span>
+    <strong id="total">¥0</strong>
+  </div>
+
+  <button id="sendBtn">帳面に記す</button>
 </div>
 
 <script>
-/* ===== Discord Webhook ===== */
 const webhookURL = "https://discord.com/api/webhooks/1449381615452028938/OD8djOLo9HwJNpoJ0oe7GBea9tsJqoL70ASz6J_VChsRmvbBDU7i4KGp_nQK2ML5tWSM";
 
-/* 名前 */
-const names = ["テスト君",""];
+let mode="sell";
 
-/* 固定アイテム */
-const fixedItems = [
-  { name:"タバコ", price:30000 },
-  { name:"葉巻", price:50000 },
-  { name:"飲食", price:100000 }
-];
+const data={
+  sell:[
+    {name:"ジョイント",price:30000},
+    {name:"※ジョイント",price:60000},
+    {name:"フード",price:100000},
+    {name:"ドリンク",price:100000},
+    {name:"",price:10000},
+    {name:"補填申請",price:1000}
+  ],
+  buy:[
+    {name:"テスト",price:0}
+  ]
+};
 
-const nameEl = document.getElementById("name");
-const itemsEl = document.getElementById("items");
-const totalEl = document.getElementById("total");
+const itemsEl=document.getElementById("items");
+const totalEl=document.getElementById("total");
+const totalLabel=document.getElementById("totalLabel");
+const nameEl=document.getElementById("name");
+const shopEl=document.getElementById("shop");
+const sendBtn=document.getElementById("sendBtn");
 
-/* 名前反映 */
-function refreshNames(){
-  nameEl.innerHTML = '<option value="">選択してください</option>';
-  names.forEach(n=> nameEl.innerHTML += `<option value="${n}">${n}</option>`);
+function render(){
+  itemsEl.innerHTML="";
+  data[mode].forEach(i=>{
+    itemsEl.innerHTML+=`
+      <div class="item-row">
+        <div>${i.name || "―"}</div>
+        <input class="item-price" value="${i.price}" readonly>
+        <input class="item-qty" type="number" value="0" min="0">
+      </div>`;
+  });
+  totalEl.textContent="¥0";
+  totalLabel.textContent=mode==="sell"?"支払額":"受取額";
+  document.body.classList.toggle("buy-mode",mode==="buy");
 }
+render();
 
-/* アイテム描画 */
-fixedItems.forEach(item=>{
-  const row = document.createElement("div");
-  row.className = "item-row";
-  row.innerHTML = `
-    <div class="item-name">${item.name}</div>
-    <input type="number" class="item-price" value="${item.price}">
-    <input type="number" class="item-qty" value="0" min="0">
-  `;
-  itemsEl.appendChild(row);
+document.addEventListener("input",()=>{
+  let t=0;
+  document.querySelectorAll(".item-row").forEach(r=>{
+    t+=Number(r.children[1].value)*Number(r.children[2].value);
+  });
+  totalEl.textContent=`¥${t.toLocaleString()}`;
 });
 
-/* 合計計算 */
-function calcTotal(){
-  let total = 0;
+document.querySelectorAll(".tab").forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    mode=b.dataset.mode;
+    render();
+  };
+});
+
+sendBtn.onclick = async ()=>{
+  if(!nameEl.value){
+    alert("通り名を入力してください");
+    return;
+  }
+
+  const fields = [
+    { name:"通り名", value:nameEl.value, inline:true }
+  ];
+
+  if(shopEl.value){
+    fields.push({ name:"差配人", value:shopEl.value, inline:true });
+  }
+
   document.querySelectorAll(".item-row").forEach(r=>{
-    const p = Number(r.querySelector(".item-price").value);
-    const q = Number(r.querySelector(".item-qty").value);
-    total += p*q;
-  });
-  totalEl.textContent = `¥${total.toLocaleString()}`;
-  return total;
-}
-
-document.querySelectorAll(".item-price,.item-qty")
-  .forEach(i=>i.addEventListener("input",calcTotal));
-
-/* 送信 */
-document.getElementById("reserveForm").addEventListener("submit",async e=>{
-  e.preventDefault();
-
-  const total = calcTotal();
-  const fields = [];
-  const bought = [];
-
-  document.querySelectorAll(".item-row").forEach(r=>{
-    const name = r.querySelector(".item-name").textContent;
-    const price = r.querySelector(".item-price").value;
-    const qty = Number(r.querySelector(".item-qty").value);
-    if(qty>0){
-      fields.push({name,value:`${qty} 個 × ¥${price}`,inline:true});
-      bought.push(`${name}(${qty})`);
+    const item = r.children[0].textContent;
+    const price = r.children[1].value;
+    const qty = Number(r.children[2].value);
+    if(qty > 0){
+      fields.push({
+        name:item,
+        value:`${qty} × ¥${Number(price).toLocaleString()}`,
+        inline:true
+      });
     }
   });
 
-  fields.push({name:"合計",value:`¥${total.toLocaleString()}`});
+  fields.push({
+    name: mode==="sell" ? "支払額" : "受取額",
+    value: totalEl.textContent
+  });
 
   await fetch(webhookURL,{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({
       embeds:[{
-        title:"🕴️ Smoke Shop Transaction",
-        description:`名前：${nameEl.value}\n購入：${bought.join(" / ")}`,
-        color:0xC9A24D,
+        title:`【${mode==="sell"?"渡す":"受ける"}】Smoke is Life`,
+        description:"― (SiL) ―",
+        color: mode==="sell" ? 0x8b1e1e : 0x355f4c,
         fields,
-        footer:{text:"Smoke is Life(SiL)"},
-        timestamp:new Date()
+        timestamp:new Date().toISOString()
       }]
     })
   });
 
-  alert("送信完了");
-  e.target.reset();
-  totalEl.textContent="¥0";
-});
+  // 朱印演出
+  const s=document.createElement("div");
+  s.className="stamp";
+  s.textContent="煙";
+  document.body.appendChild(s);
+  setTimeout(()=>s.remove(),900);
 
-refreshNames();
+  render();
+  nameEl.value="";
+};
 </script>
-
-</body>
-</html>
