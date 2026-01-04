@@ -45,7 +45,6 @@ body.buy-mode{
     );
 }
 
-/* ===== 帳場 ===== */
 .card{
   max-width:520px;
   margin:auto;
@@ -59,7 +58,6 @@ body.buy-mode{
     0 20px 40px rgba(0,0,0,.7);
 }
 
-/* ===== 見出し ===== */
 h2{
   margin:0;
   text-align:center;
@@ -74,8 +72,8 @@ h2{
   margin:6px 0 18px;
 }
 
-/* ===== 入力 ===== */
-input{
+/* input & select 共通 */
+input, select{
   width:100%;
   height:36px;
   box-sizing:border-box;
@@ -85,6 +83,12 @@ input{
   color:var(--ink);
   font-size:14px;
 }
+
+select option{
+  background:#0b0a08;
+  color:var(--ink);
+}
+
 input::placeholder{color:#777;}
 
 .form-group{
@@ -93,7 +97,6 @@ input::placeholder{color:#777;}
   margin-bottom:16px;
 }
 
-/* ===== 切替 ===== */
 .tabs{
   display:flex;
   gap:8px;
@@ -115,7 +118,6 @@ input::placeholder{color:#777;}
   border-color:var(--gold);
 }
 
-/* ===== 明細 ===== */
 #items::before{
   content:"品目 / 単価 / 数";
   display:grid;
@@ -136,7 +138,6 @@ input::placeholder{color:#777;}
 .item-price{text-align:right;}
 .item-qty{text-align:center;}
 
-/* ===== 金額 ===== */
 .total-box{
   margin-top:18px;
   padding:14px;
@@ -154,7 +155,6 @@ input::placeholder{color:#777;}
 }
 body.buy-mode #total{color:var(--green);}
 
-/* ===== ボタン ===== */
 button{
   width:100%;
   margin-top:18px;
@@ -166,11 +166,8 @@ button{
   letter-spacing:.25em;
   cursor:pointer;
 }
-button:active{
-  filter:brightness(.8);
-}
+button:active{filter:brightness(.8);}
 
-/* ===== 朱印 ===== */
 .stamp{
   position:fixed;
   left:50%;
@@ -198,7 +195,23 @@ button:active{
 
   <div class="form-group">
     <input id="shop" placeholder="差配人（任意）">
-    <input id="name" placeholder="通り名">
+
+    <!-- ▼ 通り名プルダウン -->
+    <select id="name">
+      <option value="">通り名を選択</option>
+      <option>輪乃メビウス</option>
+      <option>ボーボス</option>
+      <option>じゅんじゅん</option>
+      <option>雪城 恋狛</option>
+      <option>総島雄一</option>
+      <option>天音</option>
+      <option>さとう ひと</option>
+      <option>おむ子</option>
+      <option>古華るる</option>
+      <option>るね</option>
+      <option>ボーボボ</option>
+      <option>WAKAME</option>
+    </select>
   </div>
 
   <div class="tabs">
@@ -224,7 +237,7 @@ let mode="sell";
 const data={
   sell:[
     {name:"ジョイント",price:30000},
-    {name:"※ジョイント",price:50000},
+    {name:"※ジョイント",price:60000},
     {name:"フード",price:100000},
     {name:"ドリンク",price:100000},
     {name:"",price:10000},
@@ -277,7 +290,7 @@ document.querySelectorAll(".tab").forEach(b=>{
 
 sendBtn.onclick = async ()=>{
   if(!nameEl.value){
-    alert("通り名を入力してください");
+    alert("通り名を選択してください");
     return;
   }
 
@@ -321,7 +334,6 @@ sendBtn.onclick = async ()=>{
     })
   });
 
-  // 朱印演出
   const s=document.createElement("div");
   s.className="stamp";
   s.textContent="煙";
@@ -332,3 +344,5 @@ sendBtn.onclick = async ()=>{
   nameEl.value="";
 };
 </script>
+</body>
+</html>
