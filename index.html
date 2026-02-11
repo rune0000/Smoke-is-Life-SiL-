@@ -31,22 +31,74 @@ body.buy-mode{
   background:#0f0d09;border:1px solid var(--gold);
   color:var(--gold);padding:6px 12px;font-size:12px;letter-spacing:.2em;cursor:pointer;
 }
-.card{max-width:520px;margin:auto;padding:26px 22px;background:linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95));border:2px solid var(--border);}
+.card{
+  max-width:520px;margin:auto;padding:26px 22px;
+  background:linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95));
+  border:2px solid var(--border);
+}
 h2{text-align:center;letter-spacing:.35em;color:var(--gold);}
 .subtitle{text-align:center;font-size:11px;opacity:.6;margin:6px 0 18px;}
-input,select{width:100%;height:36px;padding:6px 8px;background:#0b0a08;border:1px solid #4a3c22;color:var(--ink);}
+
+input,select{
+  width:100%;
+  height:36px;
+  padding:6px 8px;
+  background:#0b0a08;
+  border:1px solid #4a3c22;
+  color:var(--ink);
+}
+
 .form-group{display:grid;gap:12px;margin-bottom:16px;}
 .tabs{display:flex;gap:8px;margin-bottom:16px;}
-.tab{flex:1;padding:10px;background:#0e0d0a;border:1px solid #4a3c22;color:#aaa;font-weight:700;cursor:pointer;}
+.tab{
+  flex:1;padding:10px;background:#0e0d0a;
+  border:1px solid #4a3c22;color:#aaa;
+  font-weight:700;cursor:pointer;
+}
 .tab.active{background:#1a1408;color:var(--gold);border-color:var(--gold);}
-#items::before{content:"品目 / 単価 / 数";display:grid;grid-template-columns:1fr 110px 70px;gap:10px;font-size:12px;opacity:.6;margin-bottom:6px;}
-.item-row{display:grid;grid-template-columns:1fr 110px 70px;gap:10px;margin-bottom:6px;}
-.item-price{text-align:right;}
-.item-qty{text-align:center;}
-.total-box{margin-top:18px;padding:14px;border:1px solid #4a3c22;background:#0a0907;display:flex;justify-content:center;gap:16px;}
+
+/* ▼ サイズを一回り小さく */
+#items::before{
+  content:"品目 / 単価 / 数";
+  display:grid;
+  grid-template-columns:1fr 90px 55px;
+  gap:10px;
+  font-size:12px;
+  opacity:.6;
+  margin-bottom:6px;
+}
+.item-row{
+  display:grid;
+  grid-template-columns:1fr 90px 55px;
+  gap:10px;
+  margin-bottom:6px;
+}
+.item-price{
+  text-align:right;
+  height:30px;
+  font-size:13px;
+}
+.item-qty{
+  text-align:center;
+  height:30px;
+  font-size:13px;
+}
+
+.total-box{
+  margin-top:18px;padding:14px;
+  border:1px solid #4a3c22;
+  background:#0a0907;
+  display:flex;justify-content:center;gap:16px;
+}
 #total{font-size:24px;font-weight:900;color:var(--red);}
 body.buy-mode #total{color:var(--green);}
-button{width:100%;margin-top:18px;padding:14px;background:#120f0a;color:var(--gold);border:2px solid var(--border);font-weight:900;cursor:pointer;}
+
+button{
+  width:100%;margin-top:18px;padding:14px;
+  background:#120f0a;color:var(--gold);
+  border:2px solid var(--border);
+  font-weight:900;cursor:pointer;
+}
 </style>
 </head>
 
@@ -81,25 +133,15 @@ button{width:100%;margin-top:18px;padding:14px;background:#120f0a;color:var(--go
 <script>
 let mode="sell";
 
-/* ===== データ取得（管理画面と共通） ===== */
+/* データ取得 */
 function getItems(){
   return JSON.parse(localStorage.getItem("silItems")||"{}");
 }
 function getNames(){
   return JSON.parse(localStorage.getItem("silNames")||"[]");
 }
-function getStock(name){
-  return Number(localStorage.getItem("stock_"+name)||0);
-}
-function setStock(name,val){
-  localStorage.setItem("stock_"+name,val);
-}
 
-const itemsEl=document.getElementById("items");
-const totalEl=document.getElementById("total");
-const totalLabel=document.getElementById("totalLabel");
-
-/* ===== 通り名読み込み ===== */
+/* 通り名読み込み */
 function loadNames(){
   const select=document.getElementById("name");
   select.innerHTML='<option value="">通り名を選択</option>';
@@ -111,7 +153,11 @@ function loadNames(){
 }
 loadNames();
 
-/* ===== 品目表示 ===== */
+const itemsEl=document.getElementById("items");
+const totalEl=document.getElementById("total");
+const totalLabel=document.getElementById("totalLabel");
+
+/* 品目表示 */
 function render(){
   const data=getItems();
   if(!data[mode]) return;
@@ -119,7 +165,7 @@ function render(){
   data[mode].forEach(i=>{
     itemsEl.innerHTML+=`
       <div class="item-row">
-        <div>${i.alias||i.name}<br><small>在庫:${getStock(i.name)}</small></div>
+        <div>${i.alias||i.name}</div>
         <input class="item-price" value="${i.price}" readonly>
         <input class="item-qty" type="number" value="0" min="0">
       </div>`;
@@ -149,21 +195,9 @@ document.querySelectorAll(".tab").forEach(b=>{
   };
 });
 
-/* ===== 送信処理 ===== */
+/* 送信 */
 document.getElementById("sendBtn").onclick=()=>{
-  const rows=document.querySelectorAll(".item-row");
-
-  rows.forEach(r=>{
-    const name=r.children[0].childNodes[0].textContent;
-    const qty=Number(r.children[2].value);
-
-    if(mode==="sell" && qty>0){
-      const newStock=getStock(name)-qty;
-      setStock(name,newStock<0?0:newStock);
-    }
-  });
-
-  alert("帳面に記録しました\n在庫も自動更新済み");
+  alert("帳面に記録しました");
   render();
 };
 </script>
