@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>SiL 管理ページ</title>
+<style>
+body{
+  margin:0;
+  background:#111;
+  color:#eee;
+  font-family:sans-serif;
+  padding:20px;
+}
+.card{
+  max-width:800px;
+  margin:auto;
+  background:#1b1b1b;
+  padding:20px;
+  border-radius:10px;
+}
+h2{text-align:center;margin-bottom:5px;}
+.subtitle{text-align:center;font-size:13px;opacity:.6;margin-bottom:15px;}
+
+.tabs{display:flex;gap:10px;margin-bottom:15px;}
+.tab{
+  flex:1;
+  padding:10px;
+  background:#222;
+  border:1px solid #444;
+  cursor:pointer;
+  font-weight:bold;
+}
+.tab.active{background:#444;}
+
+.row{
+  display:grid;
+  grid-template-columns:1fr 120px 60px;
+  gap:10px;
+  margin-bottom:8px;
+}
+input{
+  padding:6px;
+  border-radius:6px;
+  border:none;
+}
+button{
+  padding:10px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+.add{background:#2d6a4f;color:#fff;width:100%;margin-top:10px;}
+.save{background:#bfa45a;width:100%;margin-top:15px;}
+.logout{background:#8b1e1e;width:100%;margin-top:10px;color:#fff;}
+.delete{background:#555;color:#fff;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Smoke is Life 管理</h2>
+  <div class="subtitle">品目・単価 編集</div>
+
+  <div class="tabs">
+    <div class="tab active" data-mode="sell">渡す（売り）</div>
+    <div class="tab" data-mode="buy">受ける（買い）</div>
+  </div>
+
+  <div id="list"></div>
+  <button class="add" id="addBtn">＋ 品目追加</button>
+  <button class="save" id="saveBtn">保存</button>
+  <button class="logout" id="logoutBtn">ログアウト</button>
+</div>
+
+<script>
+const ADMIN_PASS="851312";
+
+if(localStorage.getItem("silAdmin")!=="true"){
+  const p=prompt("管理者パスワード");
+  if(p!==ADMIN_PASS){alert("違います");location.href="index.html";}
+  else localStorage.setItem("silAdmin","true");
+}
+
+let mode="sell";
+
+const defaultData={
+  sell:[
+    {name:"ジョイント",price:30000},
+    {name:"※ジョイント",price:50000},
+    {name:"フード",price:100000},
+    {name:"ドリンク",price:100000},
+    {name:"",price:10000},
+    {name:"補填申請",price:1000}
+  ],
+  buy:[{name:"テスト",price:0}]
+};
+
+function getData(){
+  return JSON.parse(localStorage.getItem("silItems")||JSON.stringify(defaultData));
+}
+function saveData(d){
+  localStorage.setItem("silItems",JSON.stringify(d));
+}
+
+const listEl=document.getElementById("list");
+
+function render(){
+  listEl.innerHTML="";
+  const data=getData()[mode];
+
+  data.forEach((item,i)=>{
+    listEl.innerHTML+=`
+      <div class="row">
+        <input value="${item.name}" placeholder="品目名" data-i="${i}" data-k="name">
+        <input type="number" value="${item.price}" data-i="${i}" data-k="price">
+        <button class="delete" data-i="${i}">削除</button>
+      </div>`;
+  });
+}
+
+render();
+
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    mode=t.dataset.mode;
+    render();
+  };
+});
+
+document.getElementById("addBtn").onclick=()=>{
+  const d=getData();
+  d[mode].push({name:"新しい品目",price:0});
+  saveData(d);
+  render();
+};
+
+listEl.addEventListener("input",e=>{
+  const i=e.target.dataset.i;
+  const k=e.target.dataset.k;
+  const d=getData();
+  d[mode][i][k]=k==="price"?Number(e.target.value):e.target.value;
+  saveData(d);
+});
+
+listEl.addEventListener("click",e=>{
+  if(e.target.classList.contains("delete")){
+    const i=e.target.dataset.i;
+    const d=getData();
+    d[mode].splice(i,1);
+    saveData(d);
+    render();
+  }
+});
+
+document.getElementById("saveBtn").onclick=()=>{
+  alert("保存しました（メインページに即反映されます）");
+};
+
+document.getElementById("logoutBtn").onclick=()=>{
+  localStorage.setItem("silAdmin","false");
+  location.href="index.html";
+};
+</script>
+</body>
+</html>
