@@ -24,16 +24,24 @@ body.buy-mode{
 /* 🔧 管理ボタン */
 .admin-btn{
   position:fixed;
-  top:18px;
-  right:20px;
+  top:14px;
+  left:16px;              /* ← 左上へ移動 */
   background:#0f0d09;
   border:1px solid var(--gold);
   color:var(--gold);
-  padding:6px 12px;
-  font-size:12px;
-  letter-spacing:.2em;
+  padding:4px 8px;        /* ← 小型化 */
+  font-size:10px;         /* ← 文字小さめ */
+  letter-spacing:.15em;
   cursor:pointer;
+  opacity:.7;             /* ← 主張を弱める */
+  transition:.2s;
 }
+
+.admin-btn:hover{
+  opacity:1;
+  box-shadow:0 0 6px rgba(191,164,90,.5);
+}
+
 
 .card{
   max-width:520px;margin:auto;padding:26px 22px;
