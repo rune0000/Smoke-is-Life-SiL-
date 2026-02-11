@@ -40,28 +40,22 @@ h2{text-align:center;letter-spacing:.35em;color:var(--gold);}
 .subtitle{text-align:center;font-size:11px;opacity:.6;margin:6px 0 18px;}
 
 input,select{
-  width:100%;
-  height:36px;
-  padding:6px 8px;
-  background:#0b0a08;
-  border:1px solid #4a3c22;
-  color:var(--ink);
+  width:100%;height:36px;padding:6px 8px;
+  background:#0b0a08;border:1px solid #4a3c22;color:var(--ink);
 }
 
 .form-group{display:grid;gap:12px;margin-bottom:16px;}
 .tabs{display:flex;gap:8px;margin-bottom:16px;}
 .tab{
   flex:1;padding:10px;background:#0e0d0a;
-  border:1px solid #4a3c22;color:#aaa;
-  font-weight:700;cursor:pointer;
+  border:1px solid #4a3c22;color:#aaa;font-weight:700;cursor:pointer;
 }
 .tab.active{background:#1a1408;color:var(--gold);border-color:var(--gold);}
 
-/* ▼ サイズを一回り小さく */
 #items::before{
   content:"品目 / 単価 / 数";
   display:grid;
-  grid-template-columns:1fr 90px 55px;
+  grid-template-columns:1fr 90px 70px;
   gap:10px;
   font-size:12px;
   opacity:.6;
@@ -69,25 +63,15 @@ input,select{
 }
 .item-row{
   display:grid;
-  grid-template-columns:1fr 90px 55px;
-  gap:10px;
-  margin-bottom:6px;
+  grid-template-columns:1fr 90px 70px;
+  gap:10px;margin-bottom:6px;
 }
-.item-price{
-  text-align:right;
-  height:30px;
-  font-size:13px;
-}
-.item-qty{
-  text-align:center;
-  height:30px;
-  font-size:13px;
-}
+.item-price{text-align:right;height:30px;font-size:13px;}
+.item-qty{text-align:center;height:30px;font-size:13px;}
 
 .total-box{
   margin-top:18px;padding:14px;
-  border:1px solid #4a3c22;
-  background:#0a0907;
+  border:1px solid #4a3c22;background:#0a0907;
   display:flex;justify-content:center;gap:16px;
 }
 #total{font-size:24px;font-weight:900;color:var(--red);}
@@ -131,17 +115,13 @@ button{
 </div>
 
 <script>
+const WEBHOOK_URL = "ここにWebhookURL"; // ← 必ず入れる
+
 let mode="sell";
 
-/* データ取得 */
-function getItems(){
-  return JSON.parse(localStorage.getItem("silItems")||"{}");
-}
-function getNames(){
-  return JSON.parse(localStorage.getItem("silNames")||"[]");
-}
+function getItems(){ return JSON.parse(localStorage.getItem("silItems")||"{}"); }
+function getNames(){ return JSON.parse(localStorage.getItem("silNames")||"[]"); }
 
-/* 通り名読み込み */
 function loadNames(){
   const select=document.getElementById("name");
   select.innerHTML='<option value="">通り名を選択</option>';
@@ -157,7 +137,6 @@ const itemsEl=document.getElementById("items");
 const totalEl=document.getElementById("total");
 const totalLabel=document.getElementById("totalLabel");
 
-/* 品目表示 */
 function render(){
   const data=getItems();
   if(!data[mode]) return;
@@ -176,7 +155,6 @@ function render(){
 }
 render();
 
-/* 合計計算 */
 document.addEventListener("input",()=>{
   let t=0;
   document.querySelectorAll(".item-row").forEach(r=>{
@@ -185,7 +163,6 @@ document.addEventListener("input",()=>{
   totalEl.textContent=`¥${t.toLocaleString()}`;
 });
 
-/* タブ切替 */
 document.querySelectorAll(".tab").forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -195,9 +172,43 @@ document.querySelectorAll(".tab").forEach(b=>{
   };
 });
 
-/* 送信 */
-document.getElementById("sendBtn").onclick=()=>{
-  alert("帳面に記録しました");
+document.getElementById("sendBtn").onclick=async()=>{
+  const shop=document.getElementById("shop").value||"（差配人なし）";
+  const name=document.getElementById("name").value||"（名無し）";
+
+  let details="";
+  let total=0;
+
+  document.querySelectorAll(".item-row").forEach(r=>{
+    const item=r.children[0].textContent;
+    const price=Number(r.children[1].value);
+    const qty=Number(r.children[2].value);
+    if(qty>0){
+      details+=`・${item} ×${qty} = ¥${(price*qty).toLocaleString()}\n`;
+      total+=price*qty;
+    }
+  });
+
+  if(total===0){ alert("数量が入力されていません"); return; }
+
+  const message={
+    content:
+`📖 **取引記録**
+モード：${mode==="sell"?"渡す":"受ける"}
+差配人：${shop}
+通り名：${name}
+
+${details}
+合計：¥${total.toLocaleString()}`
+  };
+
+  await fetch(WEBHOOK_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(message)
+  });
+
+  alert("帳面に記録しました（Discord送信済み）");
   render();
 };
 </script>
