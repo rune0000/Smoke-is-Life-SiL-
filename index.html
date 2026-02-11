@@ -54,22 +54,54 @@ input,select{
 .tab.active{background:#1a1408;color:var(--gold);border-color:var(--gold);}
 
 #items::before{
-content:"品目 / 単価 / 数量";
-display:grid;grid-template-columns:1fr 80px 60px;
-gap:12px;font-size:12px;opacity:.6;margin-bottom:8px;
+  content:"品目 / 単価 / 数量";
+  display:grid;
+  grid-template-columns:1fr 70px 50px; /* 横幅を圧縮 */
+  gap:8px;
+  font-size:11px;
+  opacity:.55;
+  margin-bottom:6px;
 }
 
-.item-row{display:grid;grid-template-columns:1fr 80px 60px;gap:12px;margin-bottom:8px;}
-.item-price{text-align:right;}
-.item-qty{text-align:center;}
+.item-row{
+  display:grid;
+  grid-template-columns:1fr 70px 50px; /* 列幅スリム */
+  gap:8px;
+  margin-bottom:6px;
+  align-items:center;
+}
+
+.item-price{
+  text-align:right;
+  font-size:12px;
+  padding:2px 4px;
+  height:28px;
+}
+
+.item-qty{
+  text-align:center;
+  font-size:12px;
+  padding:2px 4px;
+  height:28px;
+}
 
 .total-box{
-  margin-top:18px;padding:14px;
-  border:1px solid #4a3c22;background:#0a0907;
-  display:flex;justify-content:center;gap:16px;
+  margin-top:14px;
+  padding:10px 12px; /* 余白を圧縮 */
+  border:1px solid #4a3c22;
+  background:#0a0907;
+  display:flex;
+  justify-content:center;
+  gap:12px;
 }
-#total{font-size:24px;font-weight:900;color:var(--red);}
+
+#total{
+  font-size:20px; /* 少しだけ小さく */
+  font-weight:900;
+  color:var(--red);
+}
 body.buy-mode #total{color:var(--green);}
+
 
 button{
   width:100%;margin-top:18px;padding:14px;
