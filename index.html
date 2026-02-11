@@ -3,189 +3,265 @@
 <head>
 <meta charset="UTF-8">
 <title>取引覚書</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Yuji+Boku&display=swap" rel="stylesheet">
+
 <style>
 :root{
-  --ink:#eae6dc;--paper:#12110e;--border:#3a2f1c;
-  --gold:#bfa45a;--red:#8b1e1e;--green:#355f4c;
+  --ink:#eae6dc;
+  --paper:#12110e;
+  --border:#3a2f1c;
+  --gold:#bfa45a;
+  --red:#8b1e1e;
+  --green:#355f4c;
 }
+
 body{
-  margin:0;min-height:100vh;
-  background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.9)),
-  repeating-linear-gradient(90deg,#2a2418 0px,#2a2418 40px,#231e14 40px,#231e14 80px);
+  margin:0;
+  min-height:100vh;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.9)),
+    repeating-linear-gradient(
+      90deg,
+      #2a2418 0px,
+      #2a2418 40px,
+      #231e14 40px,
+      #231e14 80px
+    );
   font-family:"Shippori Mincho","Hiragino Mincho ProN",serif;
-  color:var(--ink);padding:28px;
+  color:var(--ink);
+  padding:28px;
 }
+
 body.buy-mode{
-  background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.95)),
-  repeating-linear-gradient(90deg,#1f2c26 0px,#1f2c26 40px,#1a241f 40px,#1a241f 80px);
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.95)),
+    repeating-linear-gradient(
+      90deg,
+      #1f2c26 0px,
+      #1f2c26 40px,
+      #1a241f 40px,
+      #1a241f 80px
+    );
 }
-
-/* 🔧 管理ボタン */
-.admin-btn{
-  position:fixed;
-  top:14px;
-  left:16px;
-
-  background:#0f0d09;
-  border:1px solid var(--gold);
-  color:var(--gold);
-
-  padding:3px 6px;      /* ← 横幅を細く */
-  font-size:10px;
-  letter-spacing:.12em;
-
-  min-width:auto;       /* ← 余計な横幅を消す */
-  width:auto;           /* ← 文字サイズぴったりに */
-
-  cursor:pointer;
-  opacity:.7;
-  transition:.2s;
-}
-
-.admin-btn:hover{
-  opacity:1;
-  box-shadow:0 0 6px rgba(191,164,90,.5);
-}
-
 
 .card{
-  max-width:520px;margin:auto;padding:26px 22px;
-  background:linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95));
+  max-width:520px;
+  margin:auto;
+  padding:26px 22px 24px;
+  background:
+    linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95)),
+    repeating-linear-gradient(-45deg,#14130f,#14130f 8px,#10100c 8px,#10100c 16px);
   border:2px solid var(--border);
-}
-h2{text-align:center;letter-spacing:.35em;color:var(--gold);}
-.subtitle{text-align:center;font-size:11px;opacity:.6;margin:6px 0 18px;}
-
-input,select{
-  width:100%;height:36px;padding:6px 8px;
-  background:#0b0a08;border:1px solid #4a3c22;color:var(--ink);
+  box-shadow:
+    0 0 0 1px rgba(191,164,90,.25),
+    0 20px 40px rgba(0,0,0,.7);
 }
 
-.form-group{display:grid;gap:12px;margin-bottom:16px;}
-.tabs{display:flex;gap:8px;margin-bottom:16px;}
-.tab{flex:1;padding:10px;background:#0e0d0a;border:1px solid #4a3c22;color:#aaa;font-weight:700;cursor:pointer;}
-.tab.active{background:#1a1408;color:var(--gold);border-color:var(--gold);}
+h2{
+  margin:0;
+  text-align:center;
+  letter-spacing:.35em;
+  color:var(--gold);
+}
+
+.subtitle{
+  text-align:center;
+  font-size:11px;
+  opacity:.6;
+  margin:6px 0 18px;
+}
+
+/* input & select 共通 */
+input, select{
+  width:100%;
+  height:36px;
+  box-sizing:border-box;
+  padding:6px 8px;
+  background:#0b0a08;
+  border:1px solid #4a3c22;
+  color:var(--ink);
+  font-size:14px;
+}
+
+select option{
+  background:#0b0a08;
+  color:var(--ink);
+}
+
+input::placeholder{color:#777;}
+
+.form-group{
+  display:grid;
+  gap:12px;
+  margin-bottom:16px;
+}
+
+.tabs{
+  display:flex;
+  gap:8px;
+  margin-bottom:16px;
+}
+.tab{
+  flex:1;
+  padding:10px;
+  background:#0e0d0a;
+  border:1px solid #4a3c22;
+  color:#aaa;
+  font-weight:700;
+  cursor:pointer;
+  letter-spacing:.2em;
+}
+.tab.active{
+  background:#1a1408;
+  color:var(--gold);
+  border-color:var(--gold);
+}
 
 #items::before{
-  content:"品目 / 単価 / 数量";
+  content:"品目 / 単価 / 数";
   display:grid;
-  grid-template-columns:1fr 70px 50px; /* 横幅を圧縮 */
-  gap:8px;
-  font-size:11px;
-  opacity:.55;
+  grid-template-columns:1fr 110px 70px;
+  gap:10px;
+  font-size:12px;
+  opacity:.6;
   margin-bottom:6px;
 }
 
 .item-row{
   display:grid;
-  grid-template-columns:1fr 70px 50px; /* 列幅スリム */
-  gap:8px;
+  grid-template-columns:1fr 110px 70px;
+  gap:10px;
   margin-bottom:6px;
-  align-items:center;
 }
 
-.item-price{
-  text-align:right;
-  font-size:12px;
-  padding:2px 4px;
-  height:28px;
-}
-
-.item-qty{
-  text-align:center;
-  font-size:12px;
-  padding:2px 4px;
-  height:28px;
-}
+.item-price{text-align:right;}
+.item-qty{text-align:center;}
 
 .total-box{
-  margin-top:14px;
-  padding:10px 12px; /* 余白を圧縮 */
+  margin-top:18px;
+  padding:14px;
   border:1px solid #4a3c22;
   background:#0a0907;
   display:flex;
   justify-content:center;
-  gap:12px;
+  gap:16px;
 }
 
 #total{
-  font-size:20px; /* 少しだけ小さく */
+  font-size:24px;
   font-weight:900;
   color:var(--red);
 }
 body.buy-mode #total{color:var(--green);}
 
-
 button{
-  width:100%;margin-top:18px;padding:14px;
-  background:#120f0a;color:var(--gold);
+  width:100%;
+  margin-top:18px;
+  padding:14px;
+  background:#120f0a;
+  color:var(--gold);
   border:2px solid var(--border);
-  font-weight:900;cursor:pointer;
+  font-weight:900;
+  letter-spacing:.25em;
+  cursor:pointer;
+}
+button:active{filter:brightness(.8);}
+
+.stamp{
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) scale(.4) rotate(-8deg);
+  font-size:96px;
+  opacity:0;
+  color:var(--red);
+  animation:stamp .9s ease forwards;
+  pointer-events:none;
+}
+
+@keyframes stamp{
+  0%{opacity:0;transform:translate(-50%,-60%) scale(.3) rotate(-15deg);}
+  40%{opacity:.9;}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.2) rotate(-8deg);}
 }
 </style>
 </head>
 
 <body>
-
-<!-- ⚙ 管理ページへ -->
-<button class="admin-btn" onclick="location.href='admin.html'">⚙ 管理</button>
-
 <div class="card">
-<h2>Smoke is Life(SiL)</h2>
-<div class="subtitle">― 煙 命 ―</div>
+  <h2>Smoke is Life(SiL)</h2>
+  <div class="subtitle">― 煙 命 ―</div>
 
-<div class="form-group">
-<input id="shop" placeholder="差配人（任意）">
-<select id="name"><option value="">通り名を選択</option></select>
-</div>
+  <div class="form-group">
+    <input id="shop" placeholder="差配人（任意）">
 
-<div class="tabs">
-<button class="tab active" data-mode="sell">渡す</button>
-<button class="tab" data-mode="buy">受ける</button>
-</div>
+    <!-- ▼ 通り名プルダウン -->
+    <select id="name">
+      <option value="">通り名を選択</option>
+      <option>輪乃メビウス</option>
+      <option>ボーボス</option>
+      <option>じゅんじゅん</option>
+      <option>雪城 恋狛</option>
+      <option>総島雄一</option>
+      <option>天音</option>
+      <option>さとう ひと</option>
+      <option>おむ子</option>
+      <option>古華るる</option>
+      <option>るね</option>
+      <option>ボーボボ</option>
+      <option>WAKAME</option>
+      <option>れい</option>
+    </select>
+  </div>
 
-<div id="items"></div>
+  <div class="tabs">
+    <button class="tab active" data-mode="sell">渡す</button>
+    <button class="tab" data-mode="buy">受ける</button>
+  </div>
 
-<div class="total-box">
-<span id="totalLabel">支払額</span>
-<strong id="total">¥0</strong>
-</div>
+  <div id="items"></div>
 
-<button id="sendBtn">帳面に記す</button>
+  <div class="total-box">
+    <span id="totalLabel">金</span>
+    <strong id="total">¥0</strong>
+  </div>
+
+  <button id="sendBtn">帳面に記す</button>
 </div>
 
 <script>
-const WEBHOOK_URL = "https://discord.com/api/webhooks/1449381615452028938/OD8djOLo9HwJNpoJ0oe7GBea9tsJqoL70ASz6J_VChsRmvbBDU7i4KGp_nQK2ML5tWSM";
+const webhookURL = "https://discord.com/api/webhooks/1449381615452028938/OD8djOLo9HwJNpoJ0oe7GBea9tsJqoL70ASz6J_VChsRmvbBDU7i4KGp_nQK2ML5tWSM";
 
 let mode="sell";
 
-function getItems(){ return JSON.parse(localStorage.getItem("silItems")||"{}"); }
-function getNames(){ return JSON.parse(localStorage.getItem("silNames")||"[]"); }
-
-function loadNames(){
-  const select=document.getElementById("name");
-  select.innerHTML='<option value="">通り名を選択</option>';
-  getNames().forEach(n=>{
-    const opt=document.createElement("option");
-    opt.textContent=n;
-    select.appendChild(opt);
-  });
-}
-loadNames();
+const data={
+  sell:[
+    {name:"ジョイント",price:30000},
+    {name:"※ジョイント",price:60000},
+    {name:"フード",price:100000},
+    {name:"ドリンク",price:100000},
+    {name:"",price:10000},
+    {name:"補填申請",price:1000}
+  ],
+  buy:[
+    {name:"テスト",price:0}
+  ]
+};
 
 const itemsEl=document.getElementById("items");
 const totalEl=document.getElementById("total");
 const totalLabel=document.getElementById("totalLabel");
+const nameEl=document.getElementById("name");
+const shopEl=document.getElementById("shop");
+const sendBtn=document.getElementById("sendBtn");
 
 function render(){
-  const data=getItems();
-  if(!data[mode]) return;
   itemsEl.innerHTML="";
   data[mode].forEach(i=>{
     itemsEl.innerHTML+=`
       <div class="item-row">
-        <div>${i.alias||i.name}</div>
+        <div>${i.name || "―"}</div>
         <input class="item-price" value="${i.price}" readonly>
         <input class="item-qty" type="number" value="0" min="0">
       </div>`;
@@ -213,47 +289,60 @@ document.querySelectorAll(".tab").forEach(b=>{
   };
 });
 
-document.getElementById("sendBtn").onclick=async()=>{
-  const shop=document.getElementById("shop").value||"（差配人なし）";
-  const name=document.getElementById("name").value||"（名無し）";
+sendBtn.onclick = async ()=>{
+  if(!nameEl.value){
+    alert("通り名を選択してください");
+    return;
+  }
 
-  let details="";
-  let total=0;
+  const fields = [
+    { name:"通り名", value:nameEl.value, inline:true }
+  ];
+
+  if(shopEl.value){
+    fields.push({ name:"差配人", value:shopEl.value, inline:true });
+  }
 
   document.querySelectorAll(".item-row").forEach(r=>{
-    const item=r.children[0].textContent;
-    const price=Number(r.children[1].value);
-    const qty=Number(r.children[2].value);
-    if(qty>0){
-      details+=`${item}　${qty} × ¥${price.toLocaleString()}\n`;
-      total+=price*qty;
+    const item = r.children[0].textContent;
+    const price = r.children[1].value;
+    const qty = Number(r.children[2].value);
+    if(qty > 0){
+      fields.push({
+        name:item,
+        value:`${qty} × ¥${Number(price).toLocaleString()}`,
+        inline:true
+      });
     }
   });
 
-  if(total===0){ alert("数量が入力されていません"); return; }
-
-  const embed={
-    title:`【${mode==="sell"?"渡す":"受ける"}】Smoke is Life`,
-    description:`— (SiL) —`,
-    color: mode==="sell"?0x8b1e1e:0x355f4c,
-    fields:[
-      {name:"通り名",value:name,inline:false},
-      {name:"差配人",value:shop,inline:false},
-      {name:"取引内容",value:details,inline:false},
-      {name:mode==="sell"?"支払額":"受取額",value:`¥${total.toLocaleString()}`,inline:false}
-    ],
-    footer:{text:"Smoke is Life 記録帳"},
-    timestamp:new Date()
-  };
-
-  await fetch(WEBHOOK_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({embeds:[embed]})
+  fields.push({
+    name: mode==="sell" ? "支払額" : "受取額",
+    value: totalEl.textContent
   });
 
-  alert("Discordへ送信しました");
+  await fetch(webhookURL,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      embeds:[{
+        title:`【${mode==="sell"?"渡す":"受ける"}】Smoke is Life`,
+        description:"― (SiL) ―",
+        color: mode==="sell" ? 0x8b1e1e : 0x355f4c,
+        fields,
+        timestamp:new Date().toISOString()
+      }]
+    })
+  });
+
+  const s=document.createElement("div");
+  s.className="stamp";
+  s.textContent="煙";
+  document.body.appendChild(s);
+  setTimeout(()=>s.remove(),900);
+
   render();
+  nameEl.value="";
 };
 </script>
 </body>
