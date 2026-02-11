@@ -5,43 +5,86 @@
 <title>取引覚書</title>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Yuji+Boku&display=swap" rel="stylesheet">
 <style>
-/* 既存デザインそのまま */
 :root{
   --ink:#eae6dc;--paper:#12110e;--border:#3a2f1c;
   --gold:#bfa45a;--red:#8b1e1e;--green:#355f4c;
 }
-body{margin:0;min-height:100vh;
-background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.9)),
-repeating-linear-gradient(90deg,#2a2418 0px,#2a2418 40px,#231e14 40px,#231e14 80px);
-font-family:"Shippori Mincho","Hiragino Mincho ProN",serif;color:var(--ink);padding:28px;}
+body{
+  margin:0;min-height:100vh;
+  background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.9)),
+  repeating-linear-gradient(90deg,#2a2418 0px,#2a2418 40px,#231e14 40px,#231e14 80px);
+  font-family:"Shippori Mincho","Hiragino Mincho ProN",serif;
+  color:var(--ink);padding:28px;
+}
 body.buy-mode{
-background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.95)),
-repeating-linear-gradient(90deg,#1f2c26 0px,#1f2c26 40px,#1a241f 40px,#1a241f 80px);}
-.card{max-width:520px;margin:auto;padding:26px 22px;
-background:linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95));
-border:2px solid var(--border);}
+  background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.95)),
+  repeating-linear-gradient(90deg,#1f2c26 0px,#1f2c26 40px,#1a241f 40px,#1a241f 80px);
+}
+
+/* 🔧 管理ボタン */
+.admin-btn{
+  position:fixed;
+  top:18px;
+  right:20px;
+  background:#0f0d09;
+  border:1px solid var(--gold);
+  color:var(--gold);
+  padding:6px 12px;
+  font-size:12px;
+  letter-spacing:.2em;
+  cursor:pointer;
+}
+
+.card{
+  max-width:520px;margin:auto;padding:26px 22px;
+  background:linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95));
+  border:2px solid var(--border);
+}
 h2{text-align:center;letter-spacing:.35em;color:var(--gold);}
 .subtitle{text-align:center;font-size:11px;opacity:.6;margin:6px 0 18px;}
-input,select{width:100%;height:36px;padding:6px 8px;
-background:#0b0a08;border:1px solid #4a3c22;color:var(--ink);}
+
+input,select{
+  width:100%;height:36px;padding:6px 8px;
+  background:#0b0a08;border:1px solid #4a3c22;color:var(--ink);
+}
+
 .form-group{display:grid;gap:12px;margin-bottom:16px;}
 .tabs{display:flex;gap:8px;margin-bottom:16px;}
 .tab{flex:1;padding:10px;background:#0e0d0a;border:1px solid #4a3c22;color:#aaa;font-weight:700;cursor:pointer;}
 .tab.active{background:#1a1408;color:var(--gold);border-color:var(--gold);}
+
 #items::before{
-content:"品目 / 単価 / 数量";display:grid;
-grid-template-columns:1fr 80px 60px;gap:12px;font-size:12px;opacity:.6;margin-bottom:8px;}
+content:"品目 / 単価 / 数量";
+display:grid;grid-template-columns:1fr 80px 60px;
+gap:12px;font-size:12px;opacity:.6;margin-bottom:8px;
+}
+
 .item-row{display:grid;grid-template-columns:1fr 80px 60px;gap:12px;margin-bottom:8px;}
 .item-price{text-align:right;}
 .item-qty{text-align:center;}
-.total-box{margin-top:18px;padding:14px;border:1px solid #4a3c22;background:#0a0907;display:flex;justify-content:center;gap:16px;}
+
+.total-box{
+  margin-top:18px;padding:14px;
+  border:1px solid #4a3c22;background:#0a0907;
+  display:flex;justify-content:center;gap:16px;
+}
 #total{font-size:24px;font-weight:900;color:var(--red);}
 body.buy-mode #total{color:var(--green);}
-button{width:100%;margin-top:18px;padding:14px;background:#120f0a;color:var(--gold);border:2px solid var(--border);font-weight:900;cursor:pointer;}
+
+button{
+  width:100%;margin-top:18px;padding:14px;
+  background:#120f0a;color:var(--gold);
+  border:2px solid var(--border);
+  font-weight:900;cursor:pointer;
+}
 </style>
 </head>
 
 <body>
+
+<!-- ⚙ 管理ページへ -->
+<button class="admin-btn" onclick="location.href='admin.html'">⚙ 管理</button>
+
 <div class="card">
 <h2>Smoke is Life(SiL)</h2>
 <div class="subtitle">― 煙 命 ―</div>
