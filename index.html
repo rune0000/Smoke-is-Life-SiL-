@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Yuji+Boku&display=swap" rel="stylesheet">
 
 <style>
-/* ===== デザインそのまま ===== */
 :root{
   --ink:#eae6dc;
   --paper:#12110e;
@@ -17,45 +16,30 @@
   --green:#355f4c;
 }
 body{
-  margin:0;
-  min-height:100vh;
-  background:
-    linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.9)),
-    repeating-linear-gradient(90deg,#2a2418 0px,#2a2418 40px,#231e14 40px,#231e14 80px);
+  margin:0;min-height:100vh;
+  background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,.9)),
+  repeating-linear-gradient(90deg,#2a2418 0px,#2a2418 40px,#231e14 40px,#231e14 80px);
   font-family:"Shippori Mincho","Hiragino Mincho ProN",serif;
-  color:var(--ink);
-  padding:28px;
+  color:var(--ink);padding:28px;
 }
 body.buy-mode{
-  background:
-    linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.95)),
-    repeating-linear-gradient(90deg,#1f2c26 0px,#1f2c26 40px,#1a241f 40px,#1a241f 80px);
+  background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.95)),
+  repeating-linear-gradient(90deg,#1f2c26 0px,#1f2c26 40px,#1a241f 40px,#1a241f 80px);
 }
 .admin-btn{
   position:fixed;top:18px;right:20px;
   background:#0f0d09;border:1px solid var(--gold);
-  color:var(--gold);padding:6px 12px;font-size:12px;
-  letter-spacing:.2em;cursor:pointer;
+  color:var(--gold);padding:6px 12px;font-size:12px;letter-spacing:.2em;cursor:pointer;
 }
-.card{
-  max-width:520px;margin:auto;padding:26px 22px 24px;
-  background:linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95));
-  border:2px solid var(--border);
-}
-h2{margin:0;text-align:center;letter-spacing:.35em;color:var(--gold);}
+.card{max-width:520px;margin:auto;padding:26px 22px;background:linear-gradient(180deg,rgba(18,17,14,.95),rgba(10,9,7,.95));border:2px solid var(--border);}
+h2{text-align:center;letter-spacing:.35em;color:var(--gold);}
 .subtitle{text-align:center;font-size:11px;opacity:.6;margin:6px 0 18px;}
-input,select{
-  width:100%;height:36px;box-sizing:border-box;padding:6px 8px;
-  background:#0b0a08;border:1px solid #4a3c22;color:var(--ink);
-}
+input,select{width:100%;height:36px;padding:6px 8px;background:#0b0a08;border:1px solid #4a3c22;color:var(--ink);}
 .form-group{display:grid;gap:12px;margin-bottom:16px;}
 .tabs{display:flex;gap:8px;margin-bottom:16px;}
 .tab{flex:1;padding:10px;background:#0e0d0a;border:1px solid #4a3c22;color:#aaa;font-weight:700;cursor:pointer;}
 .tab.active{background:#1a1408;color:var(--gold);border-color:var(--gold);}
-#items::before{
-  content:"品目 / 単価 / 数";
-  display:grid;grid-template-columns:1fr 110px 70px;gap:10px;font-size:12px;opacity:.6;margin-bottom:6px;
-}
+#items::before{content:"品目 / 単価 / 数";display:grid;grid-template-columns:1fr 110px 70px;gap:10px;font-size:12px;opacity:.6;margin-bottom:6px;}
 .item-row{display:grid;grid-template-columns:1fr 110px 70px;gap:10px;margin-bottom:6px;}
 .item-price{text-align:right;}
 .item-qty{text-align:center;}
@@ -76,9 +60,7 @@ button{width:100%;margin-top:18px;padding:14px;background:#120f0a;color:var(--go
 
   <div class="form-group">
     <input id="shop" placeholder="差配人（任意）">
-    <select id="name">
-      <option value="">通り名を選択</option>
-    </select>
+    <select id="name"><option value="">通り名を選択</option></select>
   </div>
 
   <div class="tabs">
@@ -89,7 +71,7 @@ button{width:100%;margin-top:18px;padding:14px;background:#120f0a;color:var(--go
   <div id="items"></div>
 
   <div class="total-box">
-    <span id="totalLabel">金</span>
+    <span id="totalLabel">支払額</span>
     <strong id="total">¥0</strong>
   </div>
 
@@ -99,33 +81,45 @@ button{width:100%;margin-top:18px;padding:14px;background:#120f0a;color:var(--go
 <script>
 let mode="sell";
 
-const defaultData={
-  sell:[
-    {name:"ジョイント",price:30000},
-    {name:"※ジョイント",price:50000},
-    {name:"フード",price:100000},
-    {name:"ドリンク",price:100000},
-    {name:"補填申請",price:1000}
-  ],
-  buy:[{name:"テスト",price:0}]
-};
-
-function getData(){
-  return JSON.parse(localStorage.getItem("silItems")||JSON.stringify(defaultData));
+/* ===== データ取得（管理画面と共通） ===== */
+function getItems(){
+  return JSON.parse(localStorage.getItem("silItems")||"{}");
+}
+function getNames(){
+  return JSON.parse(localStorage.getItem("silNames")||"[]");
+}
+function getStock(name){
+  return Number(localStorage.getItem("stock_"+name)||0);
+}
+function setStock(name,val){
+  localStorage.setItem("stock_"+name,val);
 }
 
-let data=getData();
 const itemsEl=document.getElementById("items");
 const totalEl=document.getElementById("total");
 const totalLabel=document.getElementById("totalLabel");
 
+/* ===== 通り名読み込み ===== */
+function loadNames(){
+  const select=document.getElementById("name");
+  select.innerHTML='<option value="">通り名を選択</option>';
+  getNames().forEach(n=>{
+    const opt=document.createElement("option");
+    opt.textContent=n;
+    select.appendChild(opt);
+  });
+}
+loadNames();
+
+/* ===== 品目表示 ===== */
 function render(){
-  data=getData();
+  const data=getItems();
+  if(!data[mode]) return;
   itemsEl.innerHTML="";
   data[mode].forEach(i=>{
     itemsEl.innerHTML+=`
       <div class="item-row">
-        <div>${i.alias || i.name}</div>
+        <div>${i.alias||i.name}<br><small>在庫:${getStock(i.name)}</small></div>
         <input class="item-price" value="${i.price}" readonly>
         <input class="item-qty" type="number" value="0" min="0">
       </div>`;
@@ -136,6 +130,7 @@ function render(){
 }
 render();
 
+/* 合計計算 */
 document.addEventListener("input",()=>{
   let t=0;
   document.querySelectorAll(".item-row").forEach(r=>{
@@ -144,6 +139,7 @@ document.addEventListener("input",()=>{
   totalEl.textContent=`¥${t.toLocaleString()}`;
 });
 
+/* タブ切替 */
 document.querySelectorAll(".tab").forEach(b=>{
   b.onclick=()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
@@ -153,25 +149,23 @@ document.querySelectorAll(".tab").forEach(b=>{
   };
 });
 
+/* ===== 送信処理 ===== */
+document.getElementById("sendBtn").onclick=()=>{
+  const rows=document.querySelectorAll(".item-row");
 
-// ⭐ 通り名をサーバーから取得
-async function loadNames(){
-  try{
-    const res = await fetch("/api/names");
-    const names = await res.json();
-    const select = document.getElementById("name");
-    select.innerHTML='<option value="">通り名を選択</option>';
-    names.forEach(n=>{
-      const opt=document.createElement("option");
-      opt.textContent=n;
-      select.appendChild(opt);
-    });
-  }catch(e){
-    console.log("通り名取得失敗",e);
-  }
-}
-loadNames();
+  rows.forEach(r=>{
+    const name=r.children[0].childNodes[0].textContent;
+    const qty=Number(r.children[2].value);
 
+    if(mode==="sell" && qty>0){
+      const newStock=getStock(name)-qty;
+      setStock(name,newStock<0?0:newStock);
+    }
+  });
+
+  alert("帳面に記録しました\n在庫も自動更新済み");
+  render();
+};
 </script>
 </body>
 </html>
