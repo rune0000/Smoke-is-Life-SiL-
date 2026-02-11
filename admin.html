@@ -12,7 +12,7 @@ body{
   padding:20px;
 }
 .card{
-  max-width:800px;
+  max-width:900px;
   margin:auto;
   background:#1b1b1b;
   padding:20px;
@@ -34,7 +34,7 @@ h2{text-align:center;margin-bottom:5px;}
 
 .row{
   display:grid;
-  grid-template-columns:1fr 120px 60px;
+  grid-template-columns:1.3fr 1fr 120px 60px;
   gap:10px;
   margin-bottom:8px;
 }
@@ -54,16 +54,31 @@ button{
 .save{background:#bfa45a;width:100%;margin-top:15px;}
 .logout{background:#8b1e1e;width:100%;margin-top:10px;color:#fff;}
 .delete{background:#555;color:#fff;}
+.label-row{
+  display:grid;
+  grid-template-columns:1.3fr 1fr 120px 60px;
+  gap:10px;
+  margin-bottom:6px;
+  font-size:12px;
+  opacity:.6;
+}
 </style>
 </head>
 <body>
 <div class="card">
   <h2>Smoke is Life 管理</h2>
-  <div class="subtitle">品目・単価 編集</div>
+  <div class="subtitle">品目・通り名・単価 編集</div>
 
   <div class="tabs">
     <div class="tab active" data-mode="sell">渡す（売り）</div>
     <div class="tab" data-mode="buy">受ける（買い）</div>
+  </div>
+
+  <div class="label-row">
+    <div>正式名</div>
+    <div>通り名</div>
+    <div>単価</div>
+    <div></div>
   </div>
 
   <div id="list"></div>
@@ -85,14 +100,15 @@ let mode="sell";
 
 const defaultData={
   sell:[
-    {name:"ジョイント",price:30000},
-    {name:"※ジョイント",price:50000},
-    {name:"フード",price:100000},
-    {name:"ドリンク",price:100000},
-    {name:"",price:10000},
-    {name:"補填申請",price:1000}
+    {name:"ジョイント",alias:"J",price:30000},
+    {name:"※ジョイント",alias:"高品質J",price:50000},
+    {name:"フード",alias:"飯",price:100000},
+    {name:"ドリンク",alias:"飲み物",price:100000},
+    {name:"補填申請",alias:"補填",price:1000}
   ],
-  buy:[{name:"テスト",price:0}]
+  buy:[
+    {name:"テスト",alias:"試験用",price:0}
+  ]
 };
 
 function getData(){
@@ -111,7 +127,8 @@ function render(){
   data.forEach((item,i)=>{
     listEl.innerHTML+=`
       <div class="row">
-        <input value="${item.name}" placeholder="品目名" data-i="${i}" data-k="name">
+        <input value="${item.name}" placeholder="正式名" data-i="${i}" data-k="name">
+        <input value="${item.alias||""}" placeholder="通り名" data-i="${i}" data-k="alias">
         <input type="number" value="${item.price}" data-i="${i}" data-k="price">
         <button class="delete" data-i="${i}">削除</button>
       </div>`;
@@ -131,7 +148,7 @@ document.querySelectorAll(".tab").forEach(t=>{
 
 document.getElementById("addBtn").onclick=()=>{
   const d=getData();
-  d[mode].push({name:"新しい品目",price:0});
+  d[mode].push({name:"新しい品目",alias:"通り名",price:0});
   saveData(d);
   render();
 };
