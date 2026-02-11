@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Yuji+Boku&display=swap" rel="stylesheet">
 
 <style>
-/* ====== デザインそのまま ====== */
 :root{
   --ink:#eae6dc;
   --paper:#12110e;
@@ -31,6 +30,22 @@ body.buy-mode{
     linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,.95)),
     repeating-linear-gradient(90deg,#1f2c26 0px,#1f2c26 40px,#1a241f 40px,#1a241f 80px);
 }
+
+/* ★ 管理ボタン */
+.admin-btn{
+  position:fixed;
+  top:18px;
+  right:20px;
+  background:#0f0d09;
+  border:1px solid var(--gold);
+  color:var(--gold);
+  padding:6px 12px;
+  font-size:12px;
+  letter-spacing:.2em;
+  cursor:pointer;
+}
+.admin-btn:hover{background:#1a1408;}
+
 .card{
   max-width:520px;
   margin:auto;
@@ -69,6 +84,9 @@ button:active{filter:brightness(.8);}
 </head>
 
 <body>
+
+<button class="admin-btn" onclick="location.href='admin.html'">⚙ 管理</button>
+
 <div class="card">
   <h2>Smoke is Life(SiL)</h2>
   <div class="subtitle">― 煙 命 ―</div>
@@ -102,17 +120,15 @@ button:active{filter:brightness(.8);}
 </div>
 
 <script>
-const webhookURL = "https://discord.com/api/webhooks/1449381615452028938/OD8djOLo9HwJNpoJ0oe7GBea9tsJqoL70ASz6J_VChsRmvbBDU7i4KGp_nQK2ML5tWSM";
+const webhookURL = "ここはそのまま";
 let mode="sell";
 
-/* ===== 管理ページ連動データ ===== */
 const defaultData={
   sell:[
     {name:"ジョイント",price:30000},
     {name:"※ジョイント",price:50000},
     {name:"フード",price:100000},
     {name:"ドリンク",price:100000},
-    {name:"",price:10000},
     {name:"補填申請",price:1000}
   ],
   buy:[{name:"テスト",price:0}]
@@ -123,7 +139,6 @@ function getData(){
 }
 
 let data=getData();
-
 const itemsEl=document.getElementById("items");
 const totalEl=document.getElementById("total");
 const totalLabel=document.getElementById("totalLabel");
@@ -131,12 +146,12 @@ const nameEl=document.getElementById("name");
 const shopEl=document.getElementById("shop");
 
 function render(){
-  data=getData(); // ★ 管理ページの変更を毎回反映
+  data=getData();
   itemsEl.innerHTML="";
   data[mode].forEach(i=>{
     itemsEl.innerHTML+=`
       <div class="item-row">
-        <div>${i.name || "―"}</div>
+        <div>${i.alias || i.name || "―"}</div>
         <input class="item-price" value="${i.price}" readonly>
         <input class="item-qty" type="number" value="0" min="0">
       </div>`;
@@ -163,47 +178,6 @@ document.querySelectorAll(".tab").forEach(b=>{
     render();
   };
 });
-
-document.getElementById("sendBtn").onclick = async ()=>{
-  if(!nameEl.value){ alert("通り名を選択してください"); return; }
-
-  const fields=[{ name:"通り名", value:nameEl.value, inline:true }];
-  if(shopEl.value) fields.push({ name:"差配人", value:shopEl.value, inline:true });
-
-  document.querySelectorAll(".item-row").forEach(r=>{
-    const item=r.children[0].textContent;
-    const price=r.children[1].value;
-    const qty=Number(r.children[2].value);
-    if(qty>0){
-      fields.push({ name:item, value:`${qty} × ¥${Number(price).toLocaleString()}`, inline:true });
-    }
-  });
-
-  fields.push({ name: mode==="sell"?"支払額":"受取額", value: totalEl.textContent });
-
-  await fetch(webhookURL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      embeds:[{
-        title:`【${mode==="sell"?"渡す":"受ける"}】Smoke is Life`,
-        description:"― (SiL) ―",
-        color: mode==="sell"?0x8b1e1e:0x355f4c,
-        fields,
-        timestamp:new Date().toISOString()
-      }]
-    })
-  });
-
-  const s=document.createElement("div");
-  s.className="stamp";
-  s.textContent="煙";
-  document.body.appendChild(s);
-  setTimeout(()=>s.remove(),900);
-
-  render();
-  nameEl.value="";
-};
 </script>
 </body>
 </html>
