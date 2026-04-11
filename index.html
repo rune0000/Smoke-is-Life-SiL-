@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FiveM 在庫・販売管理 (POSレジ＆クラウド同期)</title>
+    
+    <!-- ★ Firebaseを動かすためのコード ★ -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root { --primary-color: #4CAF50; --danger-color: #f44336; --info-color: #0d6efd; --warning-color: #fd7e14; --bg-color: #f8f9fa; --border-color: #dee2e6; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--bg-color); }
+        .sidebar { width: 280px; background-color: #343a40; color: white; padding: 20px 0; display: flex; flex-direction: column; }
+        .sidebar h2 { text-align: center; font-size: 16px; margin-bottom: 15px; margin-top: 0; }
+        .server-section { padding: 0 15px 15px 15px; border-bottom: 1px solid #495057; margin-bottom: 15px; }
+        .server-select { width: 100%; padding: 8px; border-radius: 4px; border: none; margin-bottom: 10px; font-weight: bold; cursor: pointer; }
+        .btn-secondary { width: 100%; background-color: #6c757d; font-size: 12px; padding: 6px; border: none; border-radius: 4px; color: white; cursor: pointer;}
+        .btn-secondary:hover { opacity: 0.8; }
+        .tab { padding: 15px 20px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .tab:hover { background-color: #495057; }
+        .tab.active { background-color: #0d6efd; border-left: 5px solid #fff; }
+        .btn-add-tab { text-align: center; padding: 12px; cursor: pointer; color: #adb5bd; font-size: 13px; font-weight: bold; border-bottom: 1px solid #495057; }
+        .btn-add-tab:hover { color: white; background-color: #495057; }
+        
+        /* スタッフ選択エリアの強化デザイン */
+        #register-controls {
+            background-color: rgba(0,0,0,0.2);
+            margin: 10px 15px;
+            padding: 15px !important;
+            border-radius: 8px;
+            border: 1px solid #495057;
+        }
+        #register-controls label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #f8cb00;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        #staff-select {
+            width: 100%;
+            height: 42px;
+            padding: 0 10px;
+            border-radius: 6px;
+            border: 2px solid var(--info-color); /* 目立つように青枠 */
+            background-color: #343a40;
+            color: #fff; /* スタッフ選択の名前を白色に設定 */
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        .btn-staff-edit {
+            background-color: transparent;
+            color: #adb5bd;
+            border: 1px dashed #6c757d;
+            width: 100%;
+            padding: 6px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-staff-edit:hover {
+            color: white;
+            border-color: white;
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .settings { margin-top: auto; padding: 20px; background-color: #2b3035; border-top: 1px solid #1a1d20; overflow-y: auto; max-height: 40vh; }
+        .settings label { font-size: 12px; color: #adb5bd; font-weight: bold; }
+        .settings input, .settings select { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; box-sizing: border-box; border-radius: 4px; border: none; background-color: #fff; color: #333; }
+        .btn-delete-server { margin-top: 5px; width: 100%; background-color: transparent; border: 1px solid #f44336; color: #f44336; font-size: 12px; padding: 6px; cursor: pointer; transition: 0.2s; border-radius: 4px; }
+        .btn-delete-server:hover { background-color: #f44336; color: white; }
+        
+        .content { flex-grow: 1; padding: 30px; overflow-y: auto; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .category-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+        .category-tab { padding: 8px 16px; background-color: #fff; border: 1px solid var(--border-color); border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold; color: #6c757d; transition: all 0.2s ease; }
+        .category-tab:hover { background-color: #f8f9fa; border-color: #adb5bd; }
+        .category-tab.active { background-color: #343a40; color: white; border-color: #343a40; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; color: white; transition: 0.2s; }
+        button:hover { opacity: 0.8; }
+        .btn-add { background-color: var(--info-color); }
+        .btn-action.green { background-color: var(--primary-color); }
+        .btn-action.red { background-color: var(--danger-color); }
+        .btn-action.blue { background-color: var(--info-color); }
+        .btn-action.orange { background-color: var(--warning-color); }
+        .btn-report { background-color: #6f42c1; font-size: 13px; }
+        .btn-delete-item { background-color: transparent; color: #f44336; font-size: 18px; padding: 5px; border: none; cursor: pointer; transition: transform 0.2s; }
+        .btn-delete-item:hover { transform: scale(1.2); opacity: 1; }
+        .btn-delete-tab { background-color: transparent; color: #6c757d; border: 1px solid #ccc; font-size: 12px; padding: 4px 8px; }
+        .btn-delete-tab:hover { background-color: #f44336; color: white; border-color: #f44336; }
+        
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #e9ecef; }
+        .input-number, .price-input { padding: 5px; text-align: right; border: 1px solid #ccc; border-radius: 3px; }
+        .input-number { width: 80px; } .price-input { width: 90px; }
+        .category-select { padding: 5px; border: none; background-color: transparent; font-size: 14px; cursor: pointer; color: #333; font-weight: bold; }
+        
+        .sync-status { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 14px; padding: 10px 15px; border-radius: 5px; background-color: #e8f5e9; color: #198754; border: 1px solid #c3e6cb; }
+        .sync-dot { width: 12px; height: 12px; background-color: #198754; border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 8px; width: 320px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .modal-content label { display: block; margin-top: 15px; font-size: 13px; font-weight: bold; color: #333; }
+        .modal-content input, .modal-content select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .list-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    
+    <!-- 各種モーダル -->
+    <div id="tab-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color: #0d6efd;">✨ 新しいタブを作成</h3>
+            <label>📌 タブの名前</label><input type="text" id="new-tab-name" placeholder="消費">
+            <label>🔣 アイコン (絵文字1文字)</label><input type="text" id="new-tab-icon" placeholder="💡" maxlength="2">
+            <label>🔽 実行時の在庫の変動</label><select id="new-tab-operation"><option value="sub">在庫を減らす (-)</option><option value="add">在庫を増やす (+)</option></select>
+            <label>🎨 実行ボタンの色</label><select id="new-tab-color"><option value="orange">オレンジ色</option><option value="blue">青色</option><option value="green">緑色</option><option value="red">赤色</option></select>
+            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-secondary" onclick="closeTabModal()" style="width:auto;">キャンセル</button>
+                <button class="btn-add" onclick="saveNewTab()" style="width:auto;">作成する</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-room-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color: #4CAF50;">➕ 新しいルームを作る</h3>
+            <label>📌 ルームの名前 (例: メインサーバー)</label>
+            <input type="text" id="new-room-name" placeholder="ルーム名を入力">
+            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-secondary" onclick="closeCreateRoomModal()" style="width:auto;">キャンセル</button>
+                <button class="btn-add" style="background-color: #4CAF50;" onclick="createRoom()">作成する</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="join-room-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color: #0d6efd;">🤝 既存のルームに参加</h3>
+            <label>🔑 招待されたルームID</label><input type="text" id="join-room-id" placeholder="例: A1B2C3" style="text-transform: uppercase;">
+            <label>📌 あなたの画面での表示名</label><input type="text" id="join-room-name" placeholder="例: 共有サーバー">
+            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-secondary" onclick="closeJoinRoomModal()" style="width:auto;">キャンセル</button>
+                <button class="btn-add" onclick="joinRoom()" style="width:auto;">参加する</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="category-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 350px;">
+            <h3 style="margin-top:0; color: #0d6efd;">🏷️ カテゴリの編集</h3>
+            <div id="category-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div>
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex-grow: 1;"><input type="text" id="new-category-name" placeholder="新しいカテゴリ名" style="margin-top: 0;"></div>
+                <button class="btn-add" onclick="addCategory()" style="width: 70px; padding: 8px;">追加</button>
+            </div>
+            <div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeCategoryModal()" style="width:auto;">閉じる</button></div>
+        </div>
+    </div>
+
+    <div id="staff-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 350px;">
+            <h3 style="margin-top:0; color: #f8cb00;">👤 担当スタッフの管理</h3>
+            <div id="staff-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div>
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex-grow: 1;"><input type="text" id="new-staff-name" placeholder="スタッフ名" style="margin-top: 0;"></div>
+                <button class="btn-add" onclick="addStaff()" style="width: 70px; padding: 8px;">追加</button>
+            </div>
+            <div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeStaffModal()" style="width:auto;">閉じる</button></div>
+        </div>
+    </div>
+
+    <div id="report-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color: #6f42c1;">📊 月次売上レポート作成</h3>
+            <label>📅 集計する月を選択</label><input type="month" id="report-month-input">
+            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-secondary" onclick="closeReportModal()" style="width:auto;">キャンセル</button>
+                <button class="btn-add" style="background-color: #6f42c1;" onclick="sendMonthlyReport()" style="width:auto;">集計して送信</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div style="display: flex; gap: 5px; padding: 0 15px 15px 15px; border-bottom: 1px solid #495057; margin-bottom: 15px;">
+            <button id="btn-mode-inv" class="btn-secondary" style="flex:1; background-color: #0d6efd; font-size:14px; padding:10px;" onclick="switchView('inventory')">📦 在庫管理</button>
+            <button id="btn-mode-reg" class="btn-secondary" style="flex:1; font-size:14px; padding:10px;" onclick="switchView('register')">🛒 会計レジ</button>
+        </div>
+
+        <h2>🌐 ルーム (サーバー) 選択</h2>
+        <div class="server-section">
+            <select id="server-select" class="server-select" onchange="changeServer()"></select>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-secondary" style="background-color: var(--primary-color);" onclick="openCreateRoomModal()">➕ 新規作成</button>
+                <button class="btn-secondary" style="background-color: var(--info-color);" onclick="openJoinRoomModal()">🤝 参加する</button>
+            </div>
+        </div>
+
+        <div id="inventory-controls">
+            <div id="sidebar-tabs"></div>
+            <div class="btn-add-tab" onclick="openTabModal()">＋ 新しいタブを追加</div>
+        </div>
+
+        <div id="register-controls" style="display: none;">
+            <label>👤 担当スタッフ選択</label>
+            <select id="staff-select"></select>
+            <button class="btn-staff-edit" onclick="openStaffModal()">⚙️ スタッフ一覧を編集する</button>
+        </div>
+        
+        <div class="settings">
+            <label id="server-settings-title" style="font-size: 14px; color: #fff;">⚙️ ルーム設定</label><br>
+            <label style="margin-top: 15px; display:inline-block;">📝 ルーム表示名</label><input type="text" id="server-name-input" placeholder="サーバー名" onchange="renameServer()">
+            <label style="margin-top: 10px; display:inline-block; color: #f8cb00;">🔑 ルームID (スタッフ招待用)</label>
+            <div style="display:flex; gap:5px; margin-bottom: 10px;">
+                <input type="text" id="room-id-display" readonly style="margin:0; background-color:#e9ecef; font-weight:bold; letter-spacing: 1px;">
+                <button class="btn-secondary" onclick="copyRoomId()" style="margin:0; width:auto; background-color: #6c757d;">コピー</button>
+            </div>
+            <label style="margin-top: 10px; display:inline-block;">🔗 Discord Webhook URL</label>
+            <input type="password" id="webhook-url" placeholder="https://discord.com/api/webhooks/..." onchange="saveWebhook()">
+            <button class="btn-delete-server" onclick="deleteServer()">🗑️ このルームから退出(削除)</button>
+            <div style="border-top: 1px dashed #495057; margin: 15px 0;"></div>
+            <button class="btn-secondary" style="width:100%; background-color: #6f42c1; padding: 8px;" onclick="openReportModal()">📊 月次売上レポートを作成</button>
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="inv-header-actions" class="header-actions" style="flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                <div class="sync-status"><div class="sync-dot"></div>クラウドデータベースと完全にリアルタイム同期中...</div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-secondary" style="background-color: #6c757d; padding: 8px 15px; font-size: 14px;" onclick="importJSON()">📂 JSONを登録(上書き)</button>
+                    <button class="btn-secondary" style="background-color: #17a2b8; padding: 8px 15px; font-size: 14px;" onclick="exportJSON()">💾 JSONをダウンロード</button>
+                    <button class="btn-add" onclick="addNewItem()">+ 新規アイテム追加</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+            <h1 id="mode-title" style="margin: 0;">📦 仕入モード</h1>
+            <button id="btn-delete-tab" class="btn-delete-tab" onclick="deleteCurrentTab()">🗑️ このタブを削除</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="category-tabs" id="category-tabs"></div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div id="bulk-total-display" style="font-size: 16px; font-weight: bold; color: var(--info-color); background: #e9ecef; padding: 8px 15px; border-radius: 20px; display: none; border: 1px solid var(--border-color);">合計: 0円</div>
+                <button id="btn-bulk-action" class="btn-action green" onclick="executeBulkAction()">✅ 入力したものを まとめて実行</button>
+                <button id="btn-checkout-action" class="btn-action orange" style="display: none; font-size: 16px; padding: 10px 20px; box-shadow: 0 3px 6px rgba(0,0,0,0.2);" onclick="executeCheckout()">🛒 会計してDiscordへ通知</button>
+            </div>
+        </div>
+
+        <table>
+            <thead id="table-head"></thead>
+            <tbody id="item-list"><tr><td colspan="9" style="text-align:center;">クラウドと接続中...</td></tr></tbody>
+        </table>
+    </div>
+
+    <script>
+        // --- Firebase 設定 ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrAhJ7lg8ERRaw02xEqopLQ1bR3xePFsU",
+            authDomain: "fivem-231de.firebaseapp.com",
+            databaseURL: "https://fivem-231de-default-rtdb.firebaseio.com/",
+            projectId: "fivem-231de",
+            storageBucket: "fivem-231de.firebasestorage.app",
+            messagingSenderId: "802767332922",
+            appId: "1:802767332922:web:6e1be7810e354c9688f703"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        let dbRefInventory = null; let dbRefStaffs = null;
+
+        let menuTabs =[]; let currentMode = null; let inventory =[];
+        const DEFAULT_CATEGORIES =["フード", "ドリンク", "ジョイント", "素材", "武器", "日用品", "その他", "URL"];
+        let categories =[]; let currentCategory = "すべて";
+        let servers =[]; let currentServerId = null; let staffs =[]; 
+        let currentView = 'inventory'; 
+        let isEditing = false;
+
+        document.addEventListener('focusin', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = true; });
+        document.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = false; });
+
+        window.onload = function() {
+            loadServers(); loadTabs(); loadCategories(); renderCategoryTabs();
+            listenToFirebase(); switchView('inventory'); 
+            const now = new Date(); document.getElementById('report-month-input').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        };
+
+        function switchView(view) {
+            currentView = view;
+            const btnInv = document.getElementById('btn-mode-inv'); const btnReg = document.getElementById('btn-mode-reg');
+            const invControls = document.getElementById('inventory-controls'); const regControls = document.getElementById('register-controls');
+            const headerActions = document.getElementById('inv-header-actions'); const btnDeleteTab = document.getElementById('btn-delete-tab');
+
+            if (view === 'inventory') {
+                btnInv.style.backgroundColor = '#0d6efd'; btnReg.style.backgroundColor = '#6c757d';
+                invControls.style.display = 'block'; regControls.style.display = 'none';
+                headerActions.style.display = 'flex'; btnDeleteTab.style.display = 'inline-block';
+                const modeDef = menuTabs.find(m => m.id === currentMode);
+                document.getElementById('mode-title').innerText = modeDef ? modeDef.title : '📦 在庫管理';
+                document.getElementById('btn-bulk-action').style.display = 'inline-block'; document.getElementById('btn-checkout-action').style.display = 'none';
+            } else {
+                btnInv.style.backgroundColor = '#6c757d'; btnReg.style.backgroundColor = '#fd7e14'; 
+                invControls.style.display = 'none'; regControls.style.display = 'block';
+                headerActions.style.display = 'none'; btnDeleteTab.style.display = 'none';
+                document.getElementById('mode-title').innerText = '🛒 会計(レジ)モード';
+                document.getElementById('btn-bulk-action').style.display = 'none'; document.getElementById('btn-checkout-action').style.display = 'inline-block';
+            }
+            renderTable();
+        }
+
+        // ☁️ Firebase 同期
+        function listenToFirebase() {
+            if (!currentServerId) return;
+            if (dbRefInventory) dbRefInventory.off();
+            if (dbRefStaffs) dbRefStaffs.off();
+            
+            dbRefInventory = database.ref('rooms/' + currentServerId + '/inventory');
+            dbRefInventory.on('value', (snapshot) => {
+                if (isEditing) return;
+                const data = snapshot.val();
+                if (data) { inventory = data.map(item => ({ ...item, id: item.id || Date.now() + Math.random(), category: item.category || "その他" })); } 
+                else { inventory =[]; }
+                renderTable(); 
+            });
+
+            dbRefStaffs = database.ref('rooms/' + currentServerId + '/staffs');
+            dbRefStaffs.on('value', (snapshot) => {
+                staffs = snapshot.val() ||[]; renderStaffList();
+            });
+        }
+
+        async function saveDataToFirebase() {
+            if (!currentServerId) return;
+            try { await database.ref('rooms/' + currentServerId + '/inventory').set(inventory); } catch (e) { console.error(e); }
+        }
+
+        // モーダル表示
+        function openCreateRoomModal() { document.getElementById('create-room-modal').style.display = 'flex'; document.getElementById('new-room-name').value = ''; }
+        function closeCreateRoomModal() { document.getElementById('create-room-modal').style.display = 'none'; }
+        function openJoinRoomModal() { document.getElementById('join-room-modal').style.display = 'flex'; }
+        function closeJoinRoomModal() { document.getElementById('join-room-modal').style.display = 'none'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // ルーム操作
+        function createRoom() {
+            const name = document.getElementById('new-room-name').value.trim(); 
+            if (!name) return alert("名前を入力してください！");
+            const newId = generateRoomId(); 
+            servers.push({ id: newId, name: name, webhook: "" }); 
+            currentServerId = newId; saveServers(); renderServerSelect(); closeCreateRoomModal(); changeServer(); 
+        }
+
+        function joinRoom() {
+            const id = document.getElementById('join-room-id').value.trim().toUpperCase(); 
+            const name = document.getElementById('join-room-name').value.trim();
+            if (!id || !name) return alert("入力してください！"); 
+            if (servers.find(s => s.id === id)) return alert("既に追加されています！");
+            servers.push({ id: id, name: name, webhook: "" }); 
+            currentServerId = id; saveServers(); renderServerSelect(); closeJoinRoomModal(); changeServer(); 
+        }
+
+        function openStaffModal() { document.getElementById('staff-modal').style.display = 'flex'; renderStaffEditList(); }
+        function closeStaffModal() { document.getElementById('staff-modal').style.display = 'none'; }
+
+        function renderStaffList() {
+            const select = document.getElementById('staff-select'); const currentVal = select.value;
+            select.innerHTML = '<option value="">-- 担当者を選択 --</option>';
+            staffs.forEach(st => { const opt = document.createElement('option'); opt.value = st; opt.innerText = st; if (st === currentVal) opt.selected = true; select.appendChild(opt); });
+            if(document.getElementById('staff-modal').style.display === 'flex') renderStaffEditList();
+        }
+        function renderStaffEditList() {
+            const listDiv = document.getElementById('staff-edit-list'); listDiv.innerHTML = '';
+            staffs.forEach((st, index) => {
+                const item = document.createElement('div'); item.className = 'list-item';
+                item.innerHTML = `<span style="font-weight:bold; color:#333;">${st}</span> <button class="btn-delete-tab" style="padding: 2px 6px;" onclick="deleteStaff(${index})">🗑️</button>`;
+                listDiv.appendChild(item);
+            });
+        }
+        async function addStaff() {
+            const input = document.getElementById('new-staff-name'); const name = input.value.trim();
+            if (!name) return alert("スタッフ名を入力してください！"); if (staffs.includes(name)) return alert("既に登録されています！");
+            staffs.push(name); await database.ref('rooms/' + currentServerId + '/staffs').set(staffs); input.value = '';
+        }
+        async function deleteStaff(index) {
+            if (!confirm(`スタッフ「${staffs[index]}」を削除しますか？`)) return;
+            staffs.splice(index, 1); await database.ref('rooms/' + currentServerId + '/staffs').set(staffs);
+        }
+
+        async function executeCheckout() {
+            const staffName = document.getElementById('staff-select').value;
+            if (!staffName) return alert("左側のメニューで「担当スタッフ」を選択してください！");
+            let targets =[];
+            inventory.forEach((item, index) => {
+                const input = document.getElementById(`qty-${index}`);
+                if (input) { const qty = Number(String(input.value).replace(/,/g, '')); if (!isNaN(qty) && qty > 0) targets.push({ item: item, index: index, qty: qty }); }
+            });
+            if (targets.length === 0) return alert("会計する商品の個数を入力してください！");
+            
+            // ★ 在庫チェックを無効化（マイナスを許可）
+
+            if (!confirm(`担当: ${staffName}\n会計（精算）しますか？`)) return;
+            let reportLines =[]; let totalAllAmount = 0; let totalQty = 0; const soldItems =[];
+            targets.forEach(t => {
+                const totalAmount = t.item.price * t.qty; totalAllAmount += totalAmount; totalQty += t.qty;
+                t.item.stock -= t.qty; 
+                soldItems.push({ name: t.item.name, price: t.item.price, qty: t.qty, total: totalAmount });
+                reportLines.push(`・${t.item.name} x ${t.qty.toLocaleString()}個 (${totalAmount.toLocaleString()}円)`);
+            });
+            const now = new Date(); const yearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            const saleData = { timestamp: now.getTime(), staff: staffName, items: soldItems, totalAmount: totalAllAmount, totalQty: totalQty };
+
+            try {
+                await database.ref('rooms/' + currentServerId + '/sales/' + yearMonth).push(saleData);
+                await saveDataToFirebase();
+                const webhookUrl = document.getElementById('webhook-url').value; const serverName = servers.find(s => s.id === currentServerId).name;
+                if (webhookUrl) {
+                    const message = { embeds:[{ title: `🛒[${serverName}] 会計のお知らせ`, color: 16744272, description: reportLines.join('\n') + `\n\n**合計金額:** ${totalAllAmount.toLocaleString()}円`, fields:[{ name: "担当スタッフ", value: staffName, inline: true }, { name: "販売総数", value: `${totalQty.toLocaleString()} 個`, inline: true }], timestamp: new Date().toISOString() }] };
+                    fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
+                }
+                alert("✅ 会計完了！"); renderTable(); 
+            } catch (e) { alert("エラーが発生しました。"); }
+        }
+
+        function openReportModal() { document.getElementById('report-modal').style.display = 'flex'; }
+        function closeReportModal() { document.getElementById('report-modal').style.display = 'none'; }
+        
+        async function sendMonthlyReport() {
+            const monthVal = document.getElementById('report-month-input').value; 
+            if (!monthVal) return alert("月を選択してください！");
+            const webhookUrl = document.getElementById('webhook-url').value;
+            if (!webhookUrl) return alert("Webhook URLが設定されていません！");
+            const serverName = servers.find(s => s.id === currentServerId).name;
+            try {
+                const snapshot = await database.ref('rooms/' + currentServerId + '/sales/' + monthVal).once('value');
+                const salesData = snapshot.val();
+                if (!salesData) return alert(`売上データはありません。`);
+
+                let grandTotalAmount = 0; let grandTotalQty = 0; const staffSummary = {};
+                Object.values(salesData).forEach(sale => {
+                    grandTotalAmount += sale.totalAmount; grandTotalQty += sale.totalQty;
+                    if (!staffSummary[sale.staff]) staffSummary[sale.staff] = { amount: 0, qty: 0, items: {} };
+                    staffSummary[sale.staff].amount += sale.totalAmount;
+                    staffSummary[sale.staff].qty += sale.totalQty;
+                    sale.items.forEach(it => {
+                        staffSummary[sale.staff].items[it.name] = (staffSummary[sale.staff].items[it.name] || 0) + it.qty;
+                    });
+                });
+
+                let desc = `📊 **売上統計レポート**\n──────────────────\n`;
+                for (const [staff, info] of Object.entries(staffSummary)) {
+                    desc += `👤 **${staff}**\n`;
+                    for (const [name, q] of Object.entries(info.items)) { desc += ` ・${name}: ${q}個\n`; }
+                    desc += ` 💰 **小計: ${info.amount.toLocaleString()}円** (計 ${info.qty.toLocaleString()}個)\n──────────────────\n`;
+                }
+                desc += `🏆 **総合計売上: ${grandTotalAmount.toLocaleString()}円**\n📦 **総販売個数: ${grandTotalQty.toLocaleString()}個**`;
+
+                const message = { embeds:[{ title: `📊 [${serverName}] ${monthVal} 月次売上レポート`, color: 7284152, description: desc, timestamp: new Date().toISOString() }] };
+                await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
+                alert("集計レポートを送信しました！"); closeReportModal();
+            } catch (e) { alert("エラーが発生しました。"); }
+        }
+
+        function updateBulkTotal() {
+            let totalAllAmount = 0; let hasInput = false;
+            inventory.forEach((item, index) => {
+                const input = document.getElementById(`qty-${index}`);
+                if (input) { const qty = Number(String(input.value).replace(/,/g, '')); if (!isNaN(qty) && qty > 0) { totalAllAmount += (item.price * qty); hasInput = true; } }
+            });
+            const displayElement = document.getElementById('bulk-total-display');
+            if (hasInput) { displayElement.style.display = 'block'; displayElement.innerText = `合計: ${totalAllAmount.toLocaleString()}円`; } else { displayElement.style.display = 'none'; }
+        }
+
+        function renderTable() {
+            const thead = document.getElementById('table-head'); const tbody = document.getElementById('item-list');
+            if (currentView === 'inventory') { thead.innerHTML = `<tr><th>カテゴリ</th><th>アイテム名</th><th>参考URL</th><th>設定価格</th><th>在庫数</th><th>個数入力</th><th>合計</th><th>個別実行</th><th style="text-align:center;">削除</th></tr>`; } 
+            else { thead.innerHTML = `<tr><th>カテゴリ</th><th>商品名</th><th>単価</th><th>在庫数</th><th>販売個数</th><th>小計</th></tr>`; }
+            if (inventory.length === 0) { tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">アイテムがありません。</td></tr>`; updateBulkTotal(); return; }
+            tbody.innerHTML = ''; const modeDef = menuTabs.find(m => m.id === currentMode);
+            inventory.forEach((item, index) => {
+                if (currentCategory !== "すべて" && item.category !== currentCategory) return;
+                const tr = document.createElement('tr');
+                if (currentView === 'inventory') {
+                    const categoryOptions = categories.map(c => `<option value="${c}" ${item.category === c ? 'selected' : ''}>${c}</option>`).join('');
+                    tr.innerHTML = `<td><select class="category-select" onchange="updateItem(${index}, 'category', this.value)">${categoryOptions}</select></td><td><input type="text" value="${item.name}" onchange="updateItem(${index}, 'name', this.value)" style="border:none; background:transparent; font-size:16px;"></td><td style="display: flex; align-items: center; border-bottom: none;"><input type="text" placeholder="https://..." value="${item.url || ''}" onchange="updateItem(${index}, 'url', this.value)" style="width: 130px; padding: 5px; border: 1px solid #ccc; border-radius: 3px;"><a href="${item.url || '#'}" target="_blank" style="text-decoration: none; margin-left: 8px; font-size: 18px; opacity: ${item.url ? '1' : '0.2'}; pointer-events: ${item.url ? 'auto' : 'none'};">🔗</a></td><td><input type="text" class="price-input" value="${item.price.toLocaleString()}" onfocus="this.value='${item.price}'" onchange="updateItem(${index}, 'price', this.value)"> 円</td><td style="font-weight: bold; font-size: 18px; color: #333;">${item.stock.toLocaleString()}</td><td><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" oninput="calcTotal(${index})"></td><td id="total-${index}" style="font-weight: bold; color: #0d6efd;">0円</td><td><button class="btn-action ${modeDef.btnClass}" onclick="executeAction(${index})">${modeDef.btnText}</button></td><td style="text-align: center;"><button class="btn-delete-item" onclick="deleteItem(${index})" title="アイテムを削除">🗑️</button></td>`;
+                } else {
+                    tr.innerHTML = `<td style="color:#6c757d; font-weight:bold;">${item.category}</td><td style="font-size:16px; font-weight:bold;">${item.name}</td><td>${item.price.toLocaleString()} 円</td><td style="font-weight: bold; font-size: 18px; color: ${item.stock <= 0 ? '#f44336' : '#333'};">${item.stock.toLocaleString()}</td><td><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" oninput="calcTotal(${index})"></td><td id="total-${index}" style="font-weight: bold; color: #fd7e14;">0円</td>`;
+                }
+                tbody.appendChild(tr);
+            });
+            updateBulkTotal();
+        }
+
+        function calcTotal(index) {
+            const qtyStr = document.getElementById(`qty-${index}`).value;
+            const qty = Number(qtyStr.replace(/,/g, '')); const price = inventory[index].price;
+            if(!isNaN(qty) && qty > 0) { document.getElementById(`total-${index}`).innerText = `${(qty * price).toLocaleString()}円`; } 
+            else { document.getElementById(`total-${index}`).innerText = `0円`; }
+            updateBulkTotal();
+        }
+
+        function importJSON() {
+            const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        if (confirm(`JSONデータで上書きしますか？`)) {
+                            inventory = parsed.map(item => ({ ...item, id: item.id || Date.now() + Math.floor(Math.random()*10000), category: item.category || "その他", price: item.price || 0, stock: item.stock || 0 }));
+                            await saveDataToFirebase(); alert("登録しました！");
+                        }
+                    } catch(err) { alert("エラー"); }
+                }; reader.readAsText(file);
+            }; input.click();
+        }
+
+        function exportJSON() {
+            if (inventory.length === 0) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(inventory, null, 2));
+            const dlAnchorElem = document.createElement('a'); const serverName = servers.find(s => s.id === currentServerId).name;
+            dlAnchorElem.setAttribute("href", dataStr); dlAnchorElem.setAttribute("download", `inventory_${serverName}.json`);
+            document.body.appendChild(dlAnchorElem); dlAnchorElem.click(); dlAnchorElem.remove();
+        }
+
+        function loadCategories() {
+            const saved = localStorage.getItem('fivem_categories');
+            if (saved) categories = JSON.parse(saved); else { categories = DEFAULT_CATEGORIES; saveCategories(); }
+        }
+        function saveCategories() { localStorage.setItem('fivem_categories', JSON.stringify(categories)); }
+        function openCategoryModal() { document.getElementById('category-modal').style.display = 'flex'; renderCategoryEditList(); }
+        function closeCategoryModal() { document.getElementById('category-modal').style.display = 'none'; }
+        function renderCategoryEditList() {
+            const listDiv = document.getElementById('category-edit-list'); listDiv.innerHTML = '';
+            categories.forEach((cat, index) => {
+                const item = document.createElement('div'); item.className = 'list-item';
+                let deleteBtn = ''; if (cat !== 'その他') deleteBtn = `<button class="btn-delete-tab" style="padding: 2px 6px;" onclick="deleteCategory(${index})" title="削除">🗑️</button>`;
+                item.innerHTML = `<span style="font-weight:bold; color:#333;">${cat}</span> ${deleteBtn}`; listDiv.appendChild(item);
+            });
+        }
+        function addCategory() {
+            const input = document.getElementById('new-category-name'); const name = input.value.trim();
+            if (!name) return; if (categories.includes(name) || name === "すべて") return;
+            categories.push(name); saveCategories(); input.value = ''; renderCategoryEditList(); renderCategoryTabs(); renderTable();
+        }
+        async function deleteCategory(index) {
+            const catName = categories[index]; if (catName === 'その他') return;
+            if (!confirm(`削除しますか？`)) return;
+            categories.splice(index, 1); saveCategories();
+            if (currentCategory === catName) currentCategory = 'すべて';
+            inventory.forEach(item => { if (item.category === catName) item.category = 'その他'; });
+            await saveDataToFirebase(); renderCategoryEditList(); renderCategoryTabs();
+        }
+
+        function loadTabs() {
+            const savedTabs = localStorage.getItem('fivem_menu_tabs');
+            if (savedTabs) { menuTabs = JSON.parse(savedTabs); } 
+            else { menuTabs =[{ id: 'tab_buy', icon: '📦', label: '仕入 (在庫を増やす)', title: '📦 仕入モード (在庫追加)', btnText: '仕入れる', actionText: '仕入(追加)', operation: 'add', btnClass: 'green' }, { id: 'tab_sell', icon: '💰', label: '売却 (在庫を減らす)', title: '💰 売却モード (在庫減少)', btnText: '売却する', actionText: '売却(減少)', operation: 'sub', btnClass: 'red' }]; saveTabs(); }
+            if (!currentMode || !menuTabs.find(m => m.id === currentMode)) currentMode = menuTabs[0].id;
+            renderSidebarTabs(); 
+        }
+        function saveTabs() { localStorage.setItem('fivem_menu_tabs', JSON.stringify(menuTabs)); }
+        function renderSidebarTabs() {
+            const container = document.getElementById('sidebar-tabs'); container.innerHTML = '';
+            menuTabs.forEach(tab => {
+                const div = document.createElement('div'); div.className = `tab ${currentMode === tab.id ? 'active' : ''}`;
+                div.innerText = `${tab.icon} ${tab.label}`; div.onclick = () => setMode(tab.id); container.appendChild(div);
+            });
+        }
+        function openTabModal() { document.getElementById('tab-modal').style.display = 'flex'; }
+        function closeTabModal() { document.getElementById('tab-modal').style.display = 'none'; }
+        function saveNewTab() {
+            const name = document.getElementById('new-tab-name').value.trim(); const icon = document.getElementById('new-tab-icon').value.trim() || '💡';
+            const operation = document.getElementById('new-tab-operation').value; const color = document.getElementById('new-tab-color').value;
+            if (!name) return;
+            const newTab = { id: 'tab_' + Date.now(), icon: icon, label: `${name} (在庫を変動)`, title: `${icon} ${name}モード`, btnText: `${name}する`, actionText: `${name}`, operation: operation, btnClass: color };
+            menuTabs.push(newTab); saveTabs(); closeTabModal(); setMode(newTab.id);
+        }
+        function deleteCurrentTab() {
+            if (menuTabs.length <= 1) return;
+            if (confirm(`削除しますか？`)) { menuTabs = menuTabs.filter(m => m.id !== currentMode); saveTabs(); setMode(menuTabs[0].id); }
+        }
+        function setMode(modeId) {
+            currentMode = modeId; renderSidebarTabs();
+            const modeDef = menuTabs.find(m => m.id === modeId);
+            if(modeDef && currentView === 'inventory') { document.getElementById('mode-title').innerHTML = modeDef.title; renderTable(); }
+        }
+        
+        function loadServers() {
+            const savedServers = localStorage.getItem('fivem_servers');
+            if (savedServers) { servers = JSON.parse(savedServers); currentServerId = localStorage.getItem('fivem_current_server') || servers[0].id; } 
+            else { const defaultId = generateRoomId(); servers =[{ id: defaultId, name: "メインサーバー", webhook: "" }]; currentServerId = defaultId; saveServers(); }
+            renderServerSelect(); applyCurrentServerSettings();
+        }
+        function saveServers() { localStorage.setItem('fivem_servers', JSON.stringify(servers)); localStorage.setItem('fivem_current_server', currentServerId); }
+        function renderServerSelect() {
+            const select = document.getElementById('server-select'); select.innerHTML = '';
+            servers.forEach(srv => { const opt = document.createElement('option'); opt.value = srv.id; opt.textContent = srv.name; if (srv.id === currentServerId) opt.selected = true; select.appendChild(opt); });
+        }
+        function changeServer() {
+            currentServerId = document.getElementById('server-select').value; saveServers(); applyCurrentServerSettings();
+            isEditing = false; currentCategory = "すべて"; renderCategoryTabs(); inventory =[];
+            document.getElementById('item-list').innerHTML = `<tr><td colspan="9" style="text-align:center; font-weight:bold; color: #0d6efd;">🔄 切り替え中...</td></tr>`;
+            updateBulkTotal(); listenToFirebase(); 
+        }
+
+        function generateRoomId() { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let id = ''; for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length)); return id; }
+        
+        function copyRoomId() {
+            const idText = document.getElementById('room-id-display').value;
+            navigator.clipboard.writeText(idText); alert("コピーしました");
+        }
+        function renameServer() {
+            const currentServer = servers.find(s => s.id === currentServerId); const newName = document.getElementById('server-name-input').value;
+            if (currentServer && newName.trim() !== "") { currentServer.name = newName; saveServers(); renderServerSelect(); }
+        }
+        function saveWebhook() {
+            const currentServer = servers.find(s => s.id === currentServerId);
+            if (currentServer) { currentServer.webhook = document.getElementById('webhook-url').value; saveServers(); }
+        }
+        function deleteServer() {
+            if (servers.length <= 1) return alert("退出できません");
+            if (confirm(`退出しますか？`)) { servers = servers.filter(s => s.id !== currentServerId); currentServerId = servers[0].id; saveServers(); renderServerSelect(); changeServer(); }
+        }
+        function applyCurrentServerSettings() {
+            const currentServer = servers.find(s => s.id === currentServerId);
+            if (currentServer) { document.getElementById('server-name-input').value = currentServer.name; document.getElementById('room-id-display').value = currentServer.id; document.getElementById('webhook-url').value = currentServer.webhook || ""; }
+        }
+        
+        function renderCategoryTabs() {
+            const container = document.getElementById('category-tabs');
+            let html = `<div class="category-tab ${currentCategory === 'すべて' ? 'active' : ''}" onclick="setCategory('すべて')">すべて</div>`;
+            categories.forEach(cat => { html += `<div class="category-tab ${currentCategory === cat ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</div>`; });
+            html += `<div class="category-tab" style="background-color: #e9ecef; border-style: dashed; color: #333;" onclick="openCategoryModal()">⚙️ 編集</div>`;
+            container.innerHTML = html;
+        }
+        function setCategory(cat) { currentCategory = cat; renderCategoryTabs(); renderTable(); }
+
+        async function updateItem(index, key, value) {
+            if (key === 'price') { value = Number(String(value).replace(/,/g, '')); if (isNaN(value)) value = 0; }
+            inventory[index][key] = value; await saveDataToFirebase();
+        }
+        async function addNewItem() {
+            let newCategory = currentCategory === "すべて" ? "その他" : currentCategory;
+            inventory.push({ id: Date.now(), name: "新しいアイテム", category: newCategory, price: 0, stock: 0, url: "" });
+            await saveDataToFirebase();
+        }
+        async function deleteItem(index) {
+            if (!confirm(`削除しますか？`)) return;
+            inventory.splice(index, 1); await saveDataToFirebase();
+        }
+
+        async function executeAction(index) {
+            const item = inventory[index]; const qtyInput = document.getElementById(`qty-${index}`);
+            const qty = Number(String(qtyInput.value).replace(/,/g, '')); const modeDef = menuTabs.find(m => m.id === currentMode);
+            if (isNaN(qty) || qty <= 0) return alert("個数を入力！");
+            
+            // 在庫チェック（仕入などの増やすモード以外で、在庫が足りない場合）
+            if (modeDef.operation === 'sub' && item.stock < qty) return alert(`在庫不足`);
+            
+            const oldStock = item.stock;
+            if (modeDef.operation === 'add') item.stock += qty; else if (modeDef.operation === 'sub') item.stock -= qty;
+            await saveDataToFirebase(); 
+
+            // ★ Discord通知 (在庫更新用) ★
+            const webhookUrl = document.getElementById('webhook-url').value;
+            const serverName = servers.find(s => s.id === currentServerId).name;
+            if (webhookUrl) {
+                const message = {
+                    embeds: [{
+                        title: `📦 [${serverName}] 在庫更新`,
+                        color: modeDef.operation === 'add' ? 3066993 : 15158332,
+                        fields: [
+                            { name: "アイテム", value: item.name, inline: true },
+                            { name: "操作", value: modeDef.actionText, inline: true },
+                            { name: "数量", value: `${qty} 個`, inline: true },
+                            { name: "変動前", value: `${oldStock} 個`, inline: true },
+                            { name: "変動後", value: `${item.stock} 個`, inline: true }
+                        ],
+                        timestamp: new Date().toISOString()
+                    }]
+                };
+                fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
+            }
+            qtyInput.value = ''; renderTable();
+        }
+
+        async function executeBulkAction() {
+            const modeDef = menuTabs.find(m => m.id === currentMode); let targets =[];
+            inventory.forEach((item, index) => {
+                const input = document.getElementById(`qty-${index}`);
+                if (input) { const qty = Number(String(input.value).replace(/,/g, '')); if (!isNaN(qty) && qty > 0) { targets.push({ item: item, index: index, qty: qty }); } }
+            });
+            if (targets.length === 0) return;
+            if (modeDef.operation === 'sub' && targets.find(t => t.item.stock < t.qty)) return alert(`在庫不足あり`);
+            if (!confirm(`${targets.length} 件実行しますか？`)) return;
+            targets.forEach(t => { if (modeDef.operation === 'add') t.item.stock += t.qty; else t.item.stock -= t.qty; });
+            await saveDataToFirebase(); alert(`実行完了`);
+        }
+    </script>
+</body>
+</html>
