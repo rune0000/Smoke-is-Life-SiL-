@@ -623,7 +623,7 @@
                         if (!orgSummary[org].items[it.name]) {
                             orgSummary[org].items[it.name] = { sell: 0, buy: 0, total: 0 };
                         }
-                        if (it.trade === 'sell' || it.trade === 'emp') {
+                        if (it.trade === 'sell' || it.trade === 'empSell') {
                             orgSummary[org].items[it.name].sell += it.qty;
                             orgSummary[org].items[it.name].total += it.total; 
                         } else {
@@ -730,7 +730,9 @@
                         const existing = inventory.find(i => i.id === item.id) || {};
                         let sPrice = item.sellPrice !== undefined ? item.sellPrice : (item.price || 0);
                         let bPrice = item.buyPrice !== undefined ? item.buyPrice : (item.price || 0);
-                        let ePrice = item.empPrice !== undefined ? item.empPrice : 0;
+                        // 古い empPrice があれば empSellPrice に引き継ぐための対応
+                        let eSellPrice = item.empSellPrice !== undefined ? item.empSellPrice : (item.empPrice || 0);
+                        let eBuyPrice = item.empBuyPrice !== undefined ? item.empBuyPrice : 0;
                         
                         return { 
                             ...item, 
@@ -738,7 +740,8 @@
                             category: item.category || "", 
                             sellPrice: sPrice, 
                             buyPrice: bPrice,
-                            empPrice: ePrice,
+                            empSellPrice: eSellPrice,
+                            empBuyPrice: eBuyPrice,
                             // ローカルの状態を保持
                             inputQty: existing.inputQty || "",
                             tradeType: existing.tradeType || "sell",
@@ -1032,14 +1035,17 @@
                 } else if (t.trade === 'buy') {
                     unitPrice = t.item.buyPrice || 0;
                     typeLabel = "📥買取";
-                } else if (t.trade === 'emp') {
-                    unitPrice = t.item.empPrice || 0;
-                    typeLabel = "👔従業員販売";
+                } else if (t.trade === 'empSell') {
+                    unitPrice = t.item.empSellPrice || 0;
+                    typeLabel = "👔従業員販";
+                } else if (t.trade === 'empBuy') {
+                    unitPrice = t.item.empBuyPrice || 0;
+                    typeLabel = "👔従業員買";
                 }
 
                 const totalAmount = unitPrice * t.qty; 
                 
-                if (t.trade === 'sell' || t.trade === 'emp') {
+                if (t.trade === 'sell' || t.trade === 'empSell') {
                     totalAllAmount += totalAmount; 
                     totalSellQty += t.qty;
                     t.item.stock -= t.qty; 
@@ -1049,7 +1055,7 @@
                     totalAllAmount -= totalAmount; 
                     totalBuyQty += t.qty;
                     t.item.stock += t.qty; 
-                    soldItems.push({ name: t.item.name, trade: 'buy', price: unitPrice, qty: t.qty, total: totalAmount });
+                    soldItems.push({ name: t.item.name, trade: t.trade, price: unitPrice, qty: t.qty, total: totalAmount });
                     reportLines.push(`・[${typeLabel}] ${t.item.name} x ${t.qty.toLocaleString()}個 (-${totalAmount.toLocaleString()}円)`);
                 }
             });
@@ -1122,7 +1128,8 @@
                     sale.items.forEach(it => {
                         let typeStr = "[販売]";
                         if (it.trade === 'buy') typeStr = "[買取]";
-                        else if (it.trade === 'emp') typeStr = "[従業員]";
+                        else if (it.trade === 'empSell') typeStr = "[従業員販]";
+                        else if (it.trade === 'empBuy') typeStr = "[従業員買]";
                         
                         const key = `${typeStr} ${it.name}`;
                         staffSummary[sale.staff].items[key] = (staffSummary[sale.staff].items[key] || 0) + it.qty;
@@ -1155,14 +1162,15 @@
                         let price = 0;
                         if (tradeType === 'sell') price = (item.sellPrice || 0);
                         else if (tradeType === 'buy') price = (item.buyPrice || 0);
-                        else if (tradeType === 'emp') price = (item.empPrice || 0);
+                        else if (tradeType === 'empSell') price = (item.empSellPrice || 0);
+                        else if (tradeType === 'empBuy') price = (item.empBuyPrice || 0);
                         
                         if (tradeType === 'sell') {
                             const dAmount = DISCOUNT_AMOUNTS[item.discountRank || 'none'];
                             price = Math.max(0, price - dAmount);
                         }
                         
-                        if (tradeType === 'buy') totalAllAmount -= (price * qty);
+                        if (tradeType === 'buy' || tradeType === 'empBuy') totalAllAmount -= (price * qty);
                         else totalAllAmount += (price * qty);
                     } else {
                         totalAllAmount += ((item.sellPrice || 0) * qty); 
@@ -1187,14 +1195,14 @@
             const isViewer = myRole === 'viewer';
             
             if (currentView === 'inventory') { 
-                // ★ 参考URLを削除し、従業員価格のヘッダーを追加
                 thead.innerHTML = `<tr>
                     <th class="hide-viewer" style="width: 30px; text-align: center;">順序</th>
                     <th>カテゴリ</th>
                     <th>アイテム名</th>
                     <th>販売値</th>
                     <th>買取値</th>
-                    <th>従業員価格</th>
+                    <th>従業員販</th>
+                    <th>従業員買</th>
                     <th>在庫数</th>
                     <th class="hide-viewer">個数入力</th>
                     <th class="hide-viewer">合計(販売)</th>
@@ -1227,7 +1235,6 @@
                         categoryOptions += `<option value="${item.category}" selected>${item.category}</option>`;
                     }
 
-                    // ★ 参考URL入力を削除し、従業員価格（empPrice）入力を追加
                     tr.innerHTML = `
                         <td class="hide-viewer" style="text-align:center;">${moveBtns}</td>
                         <td><select class="category-select lock-viewer" onchange="updateItem(${index}, 'category', this.value)">${categoryOptions}</select></td>
@@ -1235,7 +1242,8 @@
                         
                         <td><input type="text" class="price-input lock-viewer" value="${(item.sellPrice || 0).toLocaleString()}" onfocus="this.value='${item.sellPrice || 0}'" onchange="updateItem(${index}, 'sellPrice', this.value)"> 円</td>
                         <td><input type="text" class="price-input lock-viewer" value="${(item.buyPrice || 0).toLocaleString()}" onfocus="this.value='${item.buyPrice || 0}'" onchange="updateItem(${index}, 'buyPrice', this.value)" style="color: #f44336;"> 円</td>
-                        <td><input type="text" class="price-input lock-viewer" value="${(item.empPrice || 0).toLocaleString()}" onfocus="this.value='${item.empPrice || 0}'" onchange="updateItem(${index}, 'empPrice', this.value)" style="color: #6f42c1;"> 円</td>
+                        <td><input type="text" class="price-input lock-viewer" value="${(item.empSellPrice || 0).toLocaleString()}" onfocus="this.value='${item.empSellPrice || 0}'" onchange="updateItem(${index}, 'empSellPrice', this.value)" style="color: #6f42c1;"> 円</td>
+                        <td><input type="text" class="price-input lock-viewer" value="${(item.empBuyPrice || 0).toLocaleString()}" onfocus="this.value='${item.empBuyPrice || 0}'" onchange="updateItem(${index}, 'empBuyPrice', this.value)" style="color: #d63384;"> 円</td>
                         
                         <td style="font-weight: bold; font-size: 18px; color: #333;">${item.stock.toLocaleString()}</td>
                         <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" value="${item.inputQty || ''}" oninput="calcTotal(${index})"></td>
@@ -1244,15 +1252,17 @@
                         <td class="hide-viewer" style="text-align: center;"><button class="btn-delete-item" onclick="deleteItem(${index})" title="アイテムを削除">🗑️</button></td>`;
                 } else {
                     let dispPrice = 0;
-                    if (item.tradeType === 'buy') dispPrice = (item.buyPrice || 0);
-                    else if (item.tradeType === 'emp') dispPrice = (item.empPrice || 0);
-                    else dispPrice = (item.sellPrice || 0);
+                    let priceColor = '#333';
+                    
+                    if (item.tradeType === 'buy') { dispPrice = (item.buyPrice || 0); priceColor = '#f44336'; }
+                    else if (item.tradeType === 'empSell') { dispPrice = (item.empSellPrice || 0); priceColor = '#6f42c1'; }
+                    else if (item.tradeType === 'empBuy') { dispPrice = (item.empBuyPrice || 0); priceColor = '#d63384'; }
+                    else { dispPrice = (item.sellPrice || 0); priceColor = '#333'; }
 
                     if ((item.tradeType || 'sell') === 'sell') {
                         dispPrice = Math.max(0, dispPrice - DISCOUNT_AMOUNTS[item.discountRank || 'none']);
                     }
                     
-                    // ★ 取引タイプの選択肢に「従業員販売」を追加
                     tr.innerHTML = `
                         <td style="color:#6c757d; font-weight:bold;">${item.category || '未設定'}</td>
                         <td style="font-size:16px; font-weight:bold;">${item.name}</td>
@@ -1260,15 +1270,16 @@
                             <select id="trade-${index}" class="lock-viewer" onchange="calcTotal(${index})" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; font-weight: bold;">
                                 <option value="sell" ${(!item.tradeType || item.tradeType === 'sell') ? 'selected' : ''}>📤 販売 (客へ)</option>
                                 <option value="buy" ${(item.tradeType === 'buy') ? 'selected' : ''}>📥 買取 (客から)</option>
-                                <option value="emp" ${(item.tradeType === 'emp') ? 'selected' : ''}>👔 従業員販売</option>
+                                <option value="empSell" ${(item.tradeType === 'empSell') ? 'selected' : ''}>👔 従業員販</option>
+                                <option value="empBuy" ${(item.tradeType === 'empBuy') ? 'selected' : ''}>👔 従業員買</option>
                             </select>
                         </td>
                         <td style="text-align: center;">
-                            <button id="btn-discount-${index}" class="btn-discount rank-${item.discountRank || 'none'} lock-viewer" onclick="toggleDiscount(${index})" ${(item.tradeType === 'buy' || item.tradeType === 'emp') ? 'disabled style="opacity:0.5;"' : ''}>
+                            <button id="btn-discount-${index}" class="btn-discount rank-${item.discountRank || 'none'} lock-viewer" onclick="toggleDiscount(${index})" ${(item.tradeType === 'buy' || item.tradeType === 'empSell' || item.tradeType === 'empBuy') ? 'disabled style="opacity:0.5;"' : ''}>
                                 ${DISCOUNT_LABELS[item.discountRank || 'none']}
                             </button>
                         </td>
-                        <td id="price-disp-${index}" style="font-weight:bold; color: ${item.tradeType === 'buy' ? '#f44336' : (item.tradeType === 'emp' ? '#6f42c1' : '#333')};">${dispPrice.toLocaleString()} 円</td>
+                        <td id="price-disp-${index}" style="font-weight:bold; color: ${priceColor};">${dispPrice.toLocaleString()} 円</td>
                         <td style="font-weight: bold; font-size: 18px; color: ${item.stock <= 0 ? '#f44336' : '#333'};">${item.stock.toLocaleString()}</td>
                         <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" value="${item.inputQty || ''}" oninput="calcTotal(${index})"></td>
                         <td class="hide-viewer" id="total-${index}" style="font-weight: bold; color: #fd7e14;">0円</td>`;
@@ -1309,9 +1320,13 @@
                 
                 const tradeType = item.tradeType || 'sell';
                 let price = 0;
-                if (tradeType === 'sell') price = (item.sellPrice || 0);
-                else if (tradeType === 'buy') price = (item.buyPrice || 0);
-                else if (tradeType === 'emp') price = (item.empPrice || 0);
+                let priceColor = '#333';
+                let totalColor = '#0d6efd';
+                
+                if (tradeType === 'sell') { price = (item.sellPrice || 0); priceColor = '#333'; totalColor = '#0d6efd'; }
+                else if (tradeType === 'buy') { price = (item.buyPrice || 0); priceColor = '#f44336'; totalColor = '#f44336'; }
+                else if (tradeType === 'empSell') { price = (item.empSellPrice || 0); priceColor = '#6f42c1'; totalColor = '#6f42c1'; }
+                else if (tradeType === 'empBuy') { price = (item.empBuyPrice || 0); priceColor = '#d63384'; totalColor = '#d63384'; }
                 
                 if (tradeType === 'sell') {
                     const dAmount = DISCOUNT_AMOUNTS[item.discountRank || 'none'];
@@ -1321,22 +1336,21 @@
                 const priceDisp = document.getElementById(`price-disp-${index}`);
                 if (priceDisp) {
                     priceDisp.innerText = `${price.toLocaleString()} 円`;
-                    priceDisp.style.color = tradeType === 'buy' ? '#f44336' : (tradeType === 'emp' ? '#6f42c1' : '#333');
+                    priceDisp.style.color = priceColor;
                 }
                 
                 const discountBtn = document.getElementById(`btn-discount-${index}`);
                 if (discountBtn) {
-                    discountBtn.disabled = (tradeType === 'buy' || tradeType === 'emp');
-                    discountBtn.style.opacity = (tradeType === 'buy' || tradeType === 'emp') ? '0.5' : '1';
+                    discountBtn.disabled = (tradeType !== 'sell');
+                    discountBtn.style.opacity = (tradeType !== 'sell') ? '0.5' : '1';
                 }
 
                 const totalDisp = document.getElementById(`total-${index}`);
                 if (totalDisp) {
                     if (!isNaN(qty) && qty > 0) { 
-                        const sign = tradeType === 'buy' ? '-' : '';
-                        const color = tradeType === 'buy' ? '#f44336' : '#0d6efd';
+                        const sign = (tradeType === 'buy' || tradeType === 'empBuy') ? '-' : '';
                         totalDisp.innerText = `${sign}${(qty * price).toLocaleString()}円`; 
-                        totalDisp.style.color = color;
+                        totalDisp.style.color = totalColor;
                     } else { 
                         totalDisp.innerText = `0円`; 
                         totalDisp.style.color = '#fd7e14';
@@ -1368,8 +1382,9 @@
                             inventory = parsed.map(item => {
                                 let sPrice = item.sellPrice !== undefined ? item.sellPrice : (item.price || 0);
                                 let bPrice = item.buyPrice !== undefined ? item.buyPrice : (item.price || 0);
-                                let ePrice = item.empPrice !== undefined ? item.empPrice : 0;
-                                return { ...item, id: item.id || Date.now() + Math.floor(Math.random()*10000), category: item.category || "", sellPrice: sPrice, buyPrice: bPrice, empPrice: ePrice, stock: item.stock || 0 }
+                                let eSellPrice = item.empSellPrice !== undefined ? item.empSellPrice : (item.empPrice || 0);
+                                let eBuyPrice = item.empBuyPrice !== undefined ? item.empBuyPrice : 0;
+                                return { ...item, id: item.id || Date.now() + Math.floor(Math.random()*10000), category: item.category || "", sellPrice: sPrice, buyPrice: bPrice, empSellPrice: eSellPrice, empBuyPrice: eBuyPrice, stock: item.stock || 0 }
                             });
                             await saveDataToFirebase(); alert("登録しました！");
                         }
@@ -1546,7 +1561,7 @@
 
         async function updateItem(index, key, value) {
             if (myRole === 'viewer') return;
-            if (key === 'sellPrice' || key === 'buyPrice' || key === 'empPrice') { 
+            if (key === 'sellPrice' || key === 'buyPrice' || key === 'empSellPrice' || key === 'empBuyPrice') { 
                 value = Number(String(value).replace(/,/g, '')); 
                 if (isNaN(value)) value = 0; 
             }
@@ -1555,7 +1570,7 @@
         async function addNewItem() {
             if (myRole === 'viewer') return alert("権限がありません！");
             let newCategory = (currentCategories.length === 1 && !currentCategories.includes("すべて")) ? currentCategories[0] : "";
-            inventory.push({ id: Date.now(), name: "新しいアイテム", category: newCategory, sellPrice: 0, buyPrice: 0, empPrice: 0, stock: 0 });
+            inventory.push({ id: Date.now(), name: "新しいアイテム", category: newCategory, sellPrice: 0, buyPrice: 0, empSellPrice: 0, empBuyPrice: 0, stock: 0 });
             await saveDataToFirebase();
         }
         async function deleteItem(index) {
