@@ -40,7 +40,7 @@
         
         #register-controls { background-color: rgba(0,0,0,0.2); margin: 10px 15px; padding: 15px !important; border-radius: 8px; border: 1px solid #495057; }
         #register-controls label { display: block; margin-bottom: 10px; font-size: 12px; color: #f8cb00; text-transform: uppercase; letter-spacing: 1px; }
-        #staff-select { width: 100%; height: 42px; padding: 0 10px; border-radius: 6px; border: 2px solid var(--info-color); background-color: #343a40; color: #fff; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 12px; }
+        #staff-select, #org-select { width: 100%; height: 42px; padding: 0 10px; border-radius: 6px; border: 2px solid var(--info-color); background-color: #343a40; color: #fff; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 12px; }
         .btn-staff-edit { background-color: transparent; color: #adb5bd; border: 1px dashed #6c757d; width: 100%; padding: 6px; font-size: 11px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
         .btn-staff-edit:hover { color: white; border-color: white; background-color: rgba(255,255,255,0.1); }
 
@@ -75,6 +75,14 @@
         .input-number { width: 70px; } .price-input { width: 80px; }
         .category-select { padding: 5px; border: none; background-color: transparent; font-size: 14px; cursor: pointer; color: #333; font-weight: bold; }
         
+        /* ★ 追加: 割引ランクボタンのスタイル ★ */
+        .btn-discount { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; background: #fff; font-weight: bold; width: 100%; white-space: nowrap; transition: 0.2s; }
+        .btn-discount:hover { opacity: 0.8; }
+        .btn-discount.rank-none { color: #6c757d; border-color: #ced4da; }
+        .btn-discount.rank-normal { background-color: #e7f1ff; color: #0d6efd; border-color: #b6d4fe; }
+        .btn-discount.rank-silver { background-color: #f8f9fa; color: #495057; border-color: #adb5bd; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); }
+        .btn-discount.rank-gold { background-color: #fff3cd; color: #856404; border-color: #ffeeba; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); text-shadow: 0 1px 1px rgba(255,255,255,0.5); }
+
         .sync-status { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 14px; padding: 10px 15px; border-radius: 5px; background-color: #e8f5e9; color: #198754; border: 1px solid #c3e6cb; }
         .sync-dot { width: 12px; height: 12px; background-color: #198754; border-radius: 50%; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
@@ -87,16 +95,26 @@
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 320px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .modal-content label { display: block; margin-top: 15px; font-size: 13px; font-weight: bold; color: #333; }
         .modal-content input, .modal-content select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 6px 0; }
+        .list-item:last-child { border-bottom: none; }
 
-        /* ★★★ 権限コントロール用CSS ★★★ */
+        #analytics-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-top: 10px; }
+        .org-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid var(--border-color); }
+        .org-card-header { background: #343a40; color: white; padding: 12px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+        .org-card-body { padding: 0; }
+        .analytics-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .analytics-table th { background: #f8f9fa; padding: 10px; border-bottom: 1px solid #dee2e6; text-align: right; color: #495057; font-weight: bold; }
+        .analytics-table th:first-child { text-align: left; }
+        .analytics-table td { padding: 10px; border-bottom: 1px solid #f1f3f5; text-align: right; }
+        .analytics-table td:first-child { text-align: left; font-weight: bold; color: #333; }
+        .analytics-table tr:last-child td { border-bottom: none; }
+
+        /* 権限コントロール */
         body.role-viewer .edit-only { display: none !important; }
         body.role-viewer .admin-only { display: none !important; }
         body.role-viewer .hide-viewer { display: none !important; }
         body.role-viewer .lock-viewer { pointer-events: none; opacity: 0.6; border: none; background: transparent !important; -webkit-appearance: none; appearance: none; }
-        
         body.role-staff .admin-only { display: none !important; }
-        
-        /* 管理者の場合は「管理者になるボタン」を隠す */
         body.role-admin .hide-admin { display: none !important; }
     </style>
 </head>
@@ -122,7 +140,6 @@
         </div>
     </div>
 
-    <!-- 🔑 管理者権限取得モーダル -->
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 style="margin-top:0; color: #ff9800;">🔑 管理者権限を取得</h3>
@@ -185,6 +202,18 @@
         </div>
     </div>
 
+    <div id="org-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 350px;">
+            <h3 style="margin-top:0; color: #17a2b8;">🏢 販売先組織の管理</h3>
+            <div id="org-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div>
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div style="flex-grow: 1;"><input type="text" id="new-org-name" placeholder="組織名" style="margin-top: 0;"></div>
+                <button class="btn-add" onclick="addOrg()" style="width: 70px; padding: 8px;">追加</button>
+            </div>
+            <div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('org-modal')" style="width:auto;">閉じる</button></div>
+        </div>
+    </div>
+
     <div id="report-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 style="margin-top:0; color: #6f42c1;">📊 月次売上レポート作成</h3>
@@ -216,8 +245,9 @@
         </div>
 
         <div style="display: flex; gap: 5px; padding: 15px 15px 0 15px; margin-bottom: 0;">
-            <button id="btn-mode-inv" class="btn-secondary" style="flex:1; background-color: #0d6efd; font-size:14px; padding:10px;" onclick="switchView('inventory')">📦 在庫管理</button>
-            <button id="btn-mode-reg" class="btn-secondary" style="flex:1; font-size:14px; padding:10px;" onclick="switchView('register')">🛒 会計レジ</button>
+            <button id="btn-mode-inv" class="btn-secondary" style="flex:1; background-color: #0d6efd; font-size:12px; padding:10px 5px;" onclick="switchView('inventory')">📦 在庫</button>
+            <button id="btn-mode-reg" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('register')">🛒 レジ</button>
+            <button id="btn-mode-ana" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('analytics')">📊 集計</button>
         </div>
 
         <div class="server-section">
@@ -246,6 +276,10 @@
             <label>👤 担当スタッフ選択</label>
             <select id="staff-select"></select>
             <button class="btn-staff-edit edit-only" onclick="openModal('staff-modal')">⚙️ スタッフ一覧を編集する</button>
+            
+            <label style="margin-top: 15px;">🏢 販売先組織 (任意)</label>
+            <select id="org-select"></select>
+            <button class="btn-staff-edit edit-only" onclick="openModal('org-modal')">⚙️ 組織一覧を編集する</button>
         </div>
         
         <div class="settings admin-only">
@@ -285,24 +319,40 @@
             </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-            <h1 id="mode-title" style="margin: 0;">📦 仕入モード</h1>
-            <button id="btn-delete-tab" class="btn-delete-tab admin-only" onclick="deleteCurrentTab()">🗑️ このタブを削除</button>
+        <div id="ana-header-actions" class="header-actions" style="display: none; align-items: center; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <label style="font-weight:bold; font-size:14px; color:#333;">📅 対象期間:</label>
+                <input type="date" id="ana-start" style="padding:8px; border:1px solid var(--border-color); border-radius:4px; font-weight:bold; color:#333;">
+                <span style="font-weight:bold; color:#6c757d;">〜</span>
+                <input type="date" id="ana-end" style="padding:8px; border:1px solid var(--border-color); border-radius:4px; font-weight:bold; color:#333;">
+            </div>
+            <button class="btn-action blue" style="padding: 10px 20px; font-size: 14px;" onclick="fetchAndRenderAnalytics()">📊 期間を指定して集計</button>
+            <button class="btn-secondary" style="width: auto; background-color: #6c757d; padding: 10px 15px;" onclick="setThisWeek()">直近1週間</button>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div class="category-tabs" id="category-tabs"></div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <div id="bulk-total-display" style="font-size: 16px; font-weight: bold; color: var(--info-color); background: #e9ecef; padding: 8px 15px; border-radius: 20px; display: none; border: 1px solid var(--border-color);">合計: 0円</div>
-                <button id="btn-bulk-action" class="btn-action green edit-only" onclick="executeBulkAction()">✅ 入力したものを まとめて実行</button>
-                <button id="btn-checkout-action" class="btn-action orange edit-only" style="display: none; font-size: 16px; padding: 10px 20px; box-shadow: 0 3px 6px rgba(0,0,0,0.2);" onclick="executeCheckout()">🛒 会計してDiscordへ通知</button>
+        <div id="normal-view-header">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <h1 id="mode-title" style="margin: 0;">📦 仕入モード</h1>
+                <button id="btn-delete-tab" class="btn-delete-tab admin-only" onclick="deleteCurrentTab()">🗑️ このタブを削除</button>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="category-tabs" id="category-tabs"></div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div id="bulk-total-display" style="font-size: 16px; font-weight: bold; color: var(--info-color); background: #e9ecef; padding: 8px 15px; border-radius: 20px; display: none; border: 1px solid var(--border-color);">合計: 0円</div>
+                    <button id="btn-bulk-action" class="btn-action green edit-only" onclick="executeBulkAction()">✅ 入力したものを まとめて実行</button>
+                    <button id="btn-checkout-action" class="btn-action orange edit-only" style="display: none; font-size: 16px; padding: 10px 20px; box-shadow: 0 3px 6px rgba(0,0,0,0.2);" onclick="executeCheckout()">🛒 会計してDiscordへ通知</button>
+                </div>
             </div>
         </div>
 
-        <table>
+        <table id="main-table">
             <thead id="table-head"></thead>
             <tbody id="item-list"><tr><td colspan="11" style="text-align:center;">クラウドと接続中...</td></tr></tbody>
         </table>
+
+        <div id="analytics-content" style="display: none;"></div>
+
     </div>
 
     <script>
@@ -319,9 +369,8 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        let dbRefInventory = null; let dbRefStaffs = null; let dbRefSettings = null; let dbRefMembers = null;
+        let dbRefInventory = null; let dbRefStaffs = null; let dbRefOrgs = null; let dbRefSettings = null; let dbRefMembers = null;
 
-        // ユーザーIDの生成と取得
         let myUserId = localStorage.getItem('fivem_user_id');
         if (!myUserId) {
             myUserId = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now();
@@ -330,19 +379,23 @@
         let myUserName = localStorage.getItem('fivem_user_name') || "名無しスタッフ";
         let myRole = 'viewer'; 
         let roomMembers = {};
-        let currentMasterKey = ""; // ★ 追加
+        let currentMasterKey = ""; 
 
-        // ネットワーク接続状態（Presence用）
         let isConnected = false;
         database.ref('.info/connected').on('value', (snap) => {
             isConnected = snap.val() === true;
             updatePresence();
         });
 
+        // ★ 追加: 割引データの定義 ★
+        const DISCOUNT_AMOUNTS = { 'none': 0, 'normal': 500, 'silver': 750, 'gold': 1000 };
+        const DISCOUNT_LABELS = { 'none': '割引なし', 'normal': '通常(-500)', 'silver': '銀(-750)', 'gold': '金(-1k)' };
+
         const DEFAULT_CATEGORIES = [];
         let menuTabs = []; let currentMode = null; let inventory = [];
-        let categories = DEFAULT_CATEGORIES; let currentCategory = "すべて";
-        let servers = []; let currentServerId = null; let staffs = []; 
+        let categories = DEFAULT_CATEGORIES; 
+        let currentCategories = ["すべて"]; 
+        let servers = []; let currentServerId = null; let staffs = []; let orgs = [];
         let currentView = 'inventory'; 
         let isEditing = false;
 
@@ -450,31 +503,203 @@
 
         function switchView(view) {
             currentView = view;
-            const btnInv = document.getElementById('btn-mode-inv'); const btnReg = document.getElementById('btn-mode-reg');
-            const invControls = document.getElementById('inventory-controls'); const regControls = document.getElementById('register-controls');
-            const headerActions = document.getElementById('inv-header-actions'); const btnDeleteTab = document.getElementById('btn-delete-tab');
+            const btnInv = document.getElementById('btn-mode-inv'); 
+            const btnReg = document.getElementById('btn-mode-reg');
+            const btnAna = document.getElementById('btn-mode-ana');
+            
+            const invControls = document.getElementById('inventory-controls'); 
+            const regControls = document.getElementById('register-controls');
+            
+            const headerActions = document.getElementById('inv-header-actions'); 
+            const anaHeaderActions = document.getElementById('ana-header-actions'); 
+            
+            const normalHeader = document.getElementById('normal-view-header');
+            const mainTable = document.getElementById('main-table');
+            const analyticsContent = document.getElementById('analytics-content');
+
+            btnInv.style.backgroundColor = '#6c757d'; 
+            btnReg.style.backgroundColor = '#6c757d';
+            btnAna.style.backgroundColor = '#6c757d';
 
             if (view === 'inventory') {
-                btnInv.style.backgroundColor = '#0d6efd'; btnReg.style.backgroundColor = '#6c757d';
-                invControls.style.display = 'block'; regControls.style.display = 'none';
-                headerActions.style.display = 'flex'; btnDeleteTab.style.display = 'inline-block';
+                btnInv.style.backgroundColor = '#0d6efd'; 
+                invControls.style.display = 'block'; 
+                regControls.style.display = 'none';
+                headerActions.style.display = 'flex'; 
+                anaHeaderActions.style.display = 'none';
+                normalHeader.style.display = 'block';
+                mainTable.style.display = 'table';
+                analyticsContent.style.display = 'none';
+                
+                document.getElementById('btn-delete-tab').style.display = 'inline-block';
                 const modeDef = menuTabs.find(m => m.id === currentMode);
                 document.getElementById('mode-title').innerText = modeDef ? modeDef.title : '📦 在庫管理';
-                document.getElementById('btn-bulk-action').style.display = 'inline-block'; document.getElementById('btn-checkout-action').style.display = 'none';
-            } else {
-                btnInv.style.backgroundColor = '#6c757d'; btnReg.style.backgroundColor = '#fd7e14'; 
-                invControls.style.display = 'none'; regControls.style.display = 'block';
-                headerActions.style.display = 'none'; btnDeleteTab.style.display = 'none';
+                document.getElementById('btn-bulk-action').style.display = 'inline-block'; 
+                document.getElementById('btn-checkout-action').style.display = 'none';
+                renderTable();
+            } else if (view === 'register') {
+                btnReg.style.backgroundColor = '#fd7e14'; 
+                invControls.style.display = 'none'; 
+                regControls.style.display = 'block';
+                headerActions.style.display = 'none'; 
+                anaHeaderActions.style.display = 'none';
+                normalHeader.style.display = 'block';
+                mainTable.style.display = 'table';
+                analyticsContent.style.display = 'none';
+                
+                document.getElementById('btn-delete-tab').style.display = 'none';
                 document.getElementById('mode-title').innerText = '🛒 会計(レジ)モード';
-                document.getElementById('btn-bulk-action').style.display = 'none'; document.getElementById('btn-checkout-action').style.display = 'inline-block';
+                document.getElementById('btn-bulk-action').style.display = 'none'; 
+                document.getElementById('btn-checkout-action').style.display = 'inline-block';
+                renderTable();
+            } else if (view === 'analytics') {
+                btnAna.style.backgroundColor = '#6f42c1'; 
+                invControls.style.display = 'none'; 
+                regControls.style.display = 'none';
+                headerActions.style.display = 'none'; 
+                anaHeaderActions.style.display = 'flex';
+                normalHeader.style.display = 'none';
+                mainTable.style.display = 'none';
+                analyticsContent.style.display = ''; 
+                
+                if (!document.getElementById('ana-start').value) {
+                    setThisWeek();
+                }
             }
-            renderTable();
+        }
+
+        async function fetchAndRenderAnalytics() {
+            if (myRole === 'viewer') {
+                document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; color:#f44336; font-weight:bold;'>権限がありません。スタッフ以上のみ閲覧可能です。</div>";
+                return;
+            }
+            
+            const startDateStr = document.getElementById('ana-start').value;
+            const endDateStr = document.getElementById('ana-end').value;
+            if (!startDateStr || !endDateStr) return alert("期間を指定してください");
+            
+            const start = new Date(startDateStr); start.setHours(0,0,0,0);
+            const end = new Date(endDateStr); end.setHours(23,59,59,999);
+            
+            if (start > end) return alert("開始日が終了日より後になっています");
+
+            let months = [];
+            let d = new Date(start); d.setDate(1);
+            while(d <= end) {
+                months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+                d.setMonth(d.getMonth() + 1);
+            }
+            
+            document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; font-weight:bold; color:var(--info-color);'>⏳ クラウドからデータを取得・集計中...</div>";
+
+            let allSales = [];
+            try {
+                for (const ym of months) {
+                    const snap = await database.ref('rooms/' + currentServerId + '/sales/' + ym).once('value');
+                    const data = snap.val();
+                    if (data) Object.values(data).forEach(sale => allSales.push(sale));
+                }
+            } catch(e) {
+                document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; color:#f44336;'>データの取得に失敗しました</div>";
+                return;
+            }
+
+            const filtered = allSales.filter(s => s.timestamp >= start.getTime() && s.timestamp <= end.getTime());
+            
+            if (filtered.length === 0) {
+                document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; color:#6c757d; font-weight:bold;'>指定された期間内の売上データはありません。</div>";
+                return;
+            }
+
+            let orgSummary = {};
+            filtered.forEach(sale => {
+                const org = sale.organization || "指定なし (一般客など)";
+                if (!orgSummary[org]) orgSummary[org] = { items: {}, totalAmount: 0 };
+                
+                orgSummary[org].totalAmount += sale.totalAmount;
+                
+                if (sale.items) {
+                    sale.items.forEach(it => {
+                        if (!orgSummary[org].items[it.name]) {
+                            orgSummary[org].items[it.name] = { sell: 0, buy: 0, total: 0 };
+                        }
+                        if (it.trade === 'sell') {
+                            orgSummary[org].items[it.name].sell += it.qty;
+                            orgSummary[org].items[it.name].total += it.total; 
+                        } else {
+                            orgSummary[org].items[it.name].buy += it.qty;
+                            orgSummary[org].items[it.name].total -= it.total; 
+                        }
+                    });
+                }
+            });
+
+            let html = '';
+            const sortedOrgs = Object.keys(orgSummary).sort((a,b) => a === "指定なし (一般客など)" ? 1 : b.localeCompare(a));
+            
+            sortedOrgs.forEach(org => {
+                const data = orgSummary[org];
+                html += `
+                    <div class="org-card">
+                        <div class="org-card-header">
+                            <span>🏢 ${org}</span>
+                            <span style="font-size: 13px; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; color: ${data.totalAmount >= 0 ? '#4CAF50' : '#f44336'};">
+                                期間内精算: ${data.totalAmount.toLocaleString()} 円
+                            </span>
+                        </div>
+                        <div class="org-card-body">
+                            <table class="analytics-table">
+                                <thead>
+                                    <tr>
+                                        <th>アイテム名</th>
+                                        <th>📤 販売</th>
+                                        <th>📥 買取</th>
+                                        <th>小計</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+                
+                Object.entries(data.items).sort((a,b) => a[0].localeCompare(b[0])).forEach(([itemName, itData]) => {
+                    html += `
+                        <tr>
+                            <td>${itemName}</td>
+                            <td style="color:#0d6efd; font-weight:bold;">${itData.sell > 0 ? itData.sell.toLocaleString() : '-'}</td>
+                            <td style="color:#f44336; font-weight:bold;">${itData.buy > 0 ? itData.buy.toLocaleString() : '-'}</td>
+                            <td>${itData.total.toLocaleString()} 円</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('analytics-content').innerHTML = html;
+        }
+
+        function setThisWeek() {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - 6); 
+            
+            const formatDate = (d) => {
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            };
+
+            document.getElementById('ana-end').value = formatDate(end);
+            document.getElementById('ana-start').value = formatDate(start);
+            fetchAndRenderAnalytics();
         }
 
         function listenToFirebase() {
             if (!currentServerId) return;
             if (dbRefInventory) dbRefInventory.off();
             if (dbRefStaffs) dbRefStaffs.off();
+            if (dbRefOrgs) dbRefOrgs.off(); 
             if (dbRefSettings) dbRefSettings.off();
             if (dbRefMembers) dbRefMembers.off();
             
@@ -502,9 +727,22 @@
                 const data = snapshot.val();
                 if (data) { 
                     inventory = data.map(item => {
+                        // ★ 変更: 他からの同期時に「入力途中のデータ(ローカルステート)」を消さずに引き継ぐ ★
+                        const existing = inventory.find(i => i.id === item.id) || {};
                         let sPrice = item.sellPrice !== undefined ? item.sellPrice : (item.price || 0);
                         let bPrice = item.buyPrice !== undefined ? item.buyPrice : (item.price || 0);
-                        return { ...item, id: item.id || Date.now() + Math.random(), category: item.category || "", sellPrice: sPrice, buyPrice: bPrice };
+                        
+                        return { 
+                            ...item, 
+                            id: item.id || Date.now() + Math.random(), 
+                            category: item.category || "", 
+                            sellPrice: sPrice, 
+                            buyPrice: bPrice,
+                            // ローカルの状態を保持
+                            inputQty: existing.inputQty || "",
+                            tradeType: existing.tradeType || "sell",
+                            discountRank: existing.discountRank || "none"
+                        };
                     });
                 } 
                 else { inventory =[]; }
@@ -515,6 +753,11 @@
             dbRefStaffs.on('value', (snapshot) => {
                 staffs = snapshot.val() ||[]; renderStaffList();
             });
+            
+            dbRefOrgs = database.ref('rooms/' + currentServerId + '/orgs');
+            dbRefOrgs.on('value', (snapshot) => {
+                orgs = snapshot.val() ||[]; renderOrgList();
+            });
 
             dbRefSettings = database.ref('rooms/' + currentServerId + '/settings');
             dbRefSettings.on('value', (snapshot) => {
@@ -522,7 +765,6 @@
                 if (data) {
                     if (data.categories) categories = data.categories; else categories = [];
                     
-                    // ★ マスターキーの取得
                     if (data.masterKey !== undefined) {
                         currentMasterKey = data.masterKey;
                         if (document.activeElement.id !== 'settings-masterkey') {
@@ -548,7 +790,10 @@
                         saveServersLocal(); renderServerSelect();
                     }
                 }
-                if (currentCategory !== 'すべて' && !categories.includes(currentCategory)) currentCategory = 'すべて';
+                
+                currentCategories = currentCategories.filter(c => c === 'すべて' || categories.includes(c));
+                if (currentCategories.length === 0) currentCategories = ['すべて'];
+                
                 renderCategoryTabs(); renderTable();
                 
                 if (document.getElementById('category-modal').style.display === 'flex') {
@@ -559,7 +804,14 @@
 
         async function saveDataToFirebase() {
             if (!currentServerId || myRole === 'viewer') return;
-            try { await database.ref('rooms/' + currentServerId + '/inventory').set(inventory); } catch (e) { console.error(e); }
+            try { 
+                // ★ 変更: ローカル専用の一時状態(inputQtyなど)はクラウドに保存しないようにクリーンアップ
+                const cleanInventory = inventory.map(item => {
+                    const { inputQty, tradeType, discountRank, ...rest } = item;
+                    return rest;
+                });
+                await database.ref('rooms/' + currentServerId + '/inventory').set(cleanInventory); 
+            } catch (e) { console.error(e); }
         }
 
         function openModal(id) { 
@@ -568,7 +820,6 @@
         }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-        // ★ マスターキー認証システム
         async function verifyMasterKey() {
             if (!currentMasterKey) return alert("このルームにはマスターキーが設定されていません。管理者に設定を依頼してください。");
             const inputKey = document.getElementById('auth-masterkey').value.trim();
@@ -699,70 +950,143 @@
             staffs.splice(index, 1); await database.ref('rooms/' + currentServerId + '/staffs').set(staffs);
         }
 
+        function renderOrgList() {
+            const select = document.getElementById('org-select'); const currentVal = select.value;
+            select.innerHTML = '<option value="">-- 指定なし (一般客など) --</option>';
+            orgs.forEach(org => { const opt = document.createElement('option'); opt.value = org; opt.innerText = org; if (org === currentVal) opt.selected = true; select.appendChild(opt); });
+            if(document.getElementById('org-modal').style.display === 'flex') renderOrgEditList();
+        }
+        function renderOrgEditList() {
+            const listDiv = document.getElementById('org-edit-list'); listDiv.innerHTML = '';
+            orgs.forEach((org, index) => {
+                const item = document.createElement('div'); item.className = 'list-item';
+                item.innerHTML = `<span style="font-weight:bold; color:#333;">${org}</span> <button class="btn-delete-tab" style="padding: 2px 6px;" onclick="deleteOrg(${index})">🗑️</button>`;
+                listDiv.appendChild(item);
+            });
+        }
+        async function addOrg() {
+            if (myRole === 'viewer') return;
+            const input = document.getElementById('new-org-name'); const name = input.value.trim();
+            if (!name) return alert("組織名を入力してください！"); if (orgs.includes(name)) return alert("既に登録されています！");
+            orgs.push(name); await database.ref('rooms/' + currentServerId + '/orgs').set(orgs); input.value = '';
+        }
+        async function deleteOrg(index) {
+            if (myRole === 'viewer') return;
+            if (!confirm(`組織「${orgs[index]}」を削除しますか？`)) return;
+            orgs.splice(index, 1); await database.ref('rooms/' + currentServerId + '/orgs').set(orgs);
+        }
+
+        // ★ 追加: 個別の割引トグル機能 ★
+        function toggleDiscount(index) {
+            if (myRole === 'viewer') return;
+            const ranks = ['none', 'normal', 'silver', 'gold'];
+            const current = inventory[index].discountRank || 'none';
+            const nextIdx = (ranks.indexOf(current) + 1) % ranks.length;
+            const nextRank = ranks[nextIdx];
+            
+            // ローカルステートに保存
+            inventory[index].discountRank = nextRank;
+            
+            // DOMだけ更新してフォーカスを維持する
+            const btn = document.getElementById(`btn-discount-${index}`);
+            if (btn) {
+                btn.className = `btn-discount rank-${nextRank} lock-viewer`;
+                btn.innerText = DISCOUNT_LABELS[nextRank];
+            }
+            // 単価と小計の再計算
+            calcTotal(index);
+        }
+
         async function executeCheckout() {
             if (myRole === 'viewer') return alert("権限がありません！");
             const staffName = document.getElementById('staff-select').value;
+            const orgName = document.getElementById('org-select').value; 
+            
             if (!staffName) return alert("左側のメニューで「担当スタッフ」を選択してください！");
             
             let targets =[];
             inventory.forEach((item, index) => {
-                const input = document.getElementById(`qty-${index}`);
-                if (input) { 
-                    const qty = Number(String(input.value).replace(/,/g, '')); 
-                    if (!isNaN(qty) && qty > 0) {
-                        const tradeType = document.getElementById(`trade-${index}`).value;
-                        targets.push({ item: item, index: index, qty: qty, trade: tradeType }); 
-                    }
+                const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
+                if (!isNaN(qty) && qty > 0) {
+                    targets.push({ item: item, index: index, qty: qty, trade: item.tradeType || 'sell' }); 
                 }
             });
             if (targets.length === 0) return alert("会計する商品の個数を入力してください！");
 
-            if (!confirm(`担当: ${staffName}\n会計（精算）しますか？`)) return;
+            let confirmMsg = `担当: ${staffName}\n`;
+            if (orgName) confirmMsg += `販売先: ${orgName}\n`;
+            confirmMsg += `会計（精算）しますか？`;
+            if (!confirm(confirmMsg)) return;
             
             let reportLines =[]; let totalAllAmount = 0; let totalSellQty = 0; let totalBuyQty = 0; const soldItems =[];
             
             targets.forEach(t => {
-                const price = t.trade === 'sell' ? (t.item.sellPrice || 0) : (t.item.buyPrice || 0);
-                const totalAmount = price * t.qty; 
+                let unitPrice = t.trade === 'sell' ? (t.item.sellPrice || 0) : (t.item.buyPrice || 0);
+                let discountText = "";
+                
+                // 割引の適用（販売のときのみ）
+                if (t.trade === 'sell' && t.item.discountRank && t.item.discountRank !== 'none') {
+                    const dAmount = DISCOUNT_AMOUNTS[t.item.discountRank];
+                    unitPrice = Math.max(0, unitPrice - dAmount);
+                    discountText = `(割引: ${DISCOUNT_LABELS[t.item.discountRank]})`;
+                }
+
+                const totalAmount = unitPrice * t.qty; 
                 
                 if (t.trade === 'sell') {
                     totalAllAmount += totalAmount; 
                     totalSellQty += t.qty;
                     t.item.stock -= t.qty; 
-                    soldItems.push({ name: t.item.name, trade: 'sell', price: price, qty: t.qty, total: totalAmount });
-                    reportLines.push(`・[📤販売] ${t.item.name} x ${t.qty.toLocaleString()}個 (+${totalAmount.toLocaleString()}円)`);
+                    soldItems.push({ name: t.item.name, trade: 'sell', price: unitPrice, qty: t.qty, total: totalAmount });
+                    reportLines.push(`・[📤販売] ${t.item.name} ${discountText} x ${t.qty.toLocaleString()}個 (+${totalAmount.toLocaleString()}円)`);
                 } else {
                     totalAllAmount -= totalAmount; 
                     totalBuyQty += t.qty;
                     t.item.stock += t.qty; 
-                    soldItems.push({ name: t.item.name, trade: 'buy', price: price, qty: t.qty, total: totalAmount });
+                    soldItems.push({ name: t.item.name, trade: 'buy', price: unitPrice, qty: t.qty, total: totalAmount });
                     reportLines.push(`・[📥買取] ${t.item.name} x ${t.qty.toLocaleString()}個 (-${totalAmount.toLocaleString()}円)`);
                 }
             });
             
             const now = new Date(); const yearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            const saleData = { timestamp: now.getTime(), staff: staffName, items: soldItems, totalAmount: totalAllAmount, totalSellQty: totalSellQty, totalBuyQty: totalBuyQty };
+            const saleData = { timestamp: now.getTime(), staff: staffName, organization: orgName, items: soldItems, totalAmount: totalAllAmount, totalSellQty: totalSellQty, totalBuyQty: totalBuyQty };
 
             try {
                 await database.ref('rooms/' + currentServerId + '/sales/' + yearMonth).push(saleData);
                 await saveDataToFirebase();
                 const webhookUrl = document.getElementById('webhook-url').value; const serverName = servers.find(s => s.id === currentServerId).name;
                 if (webhookUrl) {
+                    let titleStr = `🛒[${serverName}] 会計・精算完了`;
+                    if (orgName) titleStr += ` (販売先: ${orgName})`;
+
+                    let fields = [
+                        { name: "担当スタッフ", value: staffName, inline: true }, 
+                        { name: "販売 / 買取数", value: `売: ${totalSellQty.toLocaleString()} / 買: ${totalBuyQty.toLocaleString()}`, inline: true }
+                    ];
+                    if (orgName) {
+                        fields.push({ name: "🏢 販売先組織", value: orgName, inline: true });
+                    }
+
                     const message = { 
                         embeds:[{ 
-                            title: `🛒[${serverName}] 会計・精算完了`, 
+                            title: titleStr, 
                             color: totalAllAmount >= 0 ? 3066993 : 15158332, 
                             description: reportLines.join('\n') + `\n\n**最終精算金額:** ${totalAllAmount.toLocaleString()}円`, 
-                            fields:[
-                                { name: "担当スタッフ", value: staffName, inline: true }, 
-                                { name: "販売 / 買取数", value: `売: ${totalSellQty.toLocaleString()} / 買: ${totalBuyQty.toLocaleString()}`, inline: true }
-                            ], 
+                            fields: fields, 
                             timestamp: new Date().toISOString() 
                         }] 
                     };
                     fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
                 }
-                alert("✅ 会計完了！"); renderTable(); 
+                alert("✅ 会計完了！"); 
+                
+                // 会計が完了したら入力状態をリセット
+                inventory.forEach(item => {
+                    item.inputQty = "";
+                    item.tradeType = "sell";
+                    item.discountRank = "none";
+                });
+                renderTable(); 
             } catch (e) { alert("エラーが発生しました。"); }
         }
 
@@ -811,26 +1135,31 @@
             } catch (e) { alert("エラーが発生しました。"); }
         }
 
+        // ★ 変更: ローカルステートに基づいて合計を計算 ★
         function updateBulkTotal() {
+            if (currentView === 'analytics') return;
+            
             let totalAllAmount = 0; let hasInput = false;
             inventory.forEach((item, index) => {
-                const input = document.getElementById(`qty-${index}`);
-                if (input) { 
-                    const qty = Number(String(input.value).replace(/,/g, '')); 
-                    if (!isNaN(qty) && qty > 0) { 
-                        if (currentView === 'register') {
-                            const tradeSelect = document.getElementById(`trade-${index}`);
-                            const isBuy = tradeSelect && tradeSelect.value === 'buy';
-                            const price = isBuy ? (item.buyPrice || 0) : (item.sellPrice || 0);
-                            
-                            if (isBuy) totalAllAmount -= (price * qty);
-                            else totalAllAmount += (price * qty);
-                        } else {
-                            totalAllAmount += ((item.sellPrice || 0) * qty); 
+                const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
+                if (!isNaN(qty) && qty > 0) { 
+                    if (currentView === 'register') {
+                        const tradeType = item.tradeType || 'sell';
+                        let price = tradeType === 'buy' ? (item.buyPrice || 0) : (item.sellPrice || 0);
+                        
+                        // 割引の反映
+                        if (tradeType === 'sell') {
+                            const dAmount = DISCOUNT_AMOUNTS[item.discountRank || 'none'];
+                            price = Math.max(0, price - dAmount);
                         }
-                        hasInput = true; 
-                    } 
-                }
+                        
+                        if (tradeType === 'buy') totalAllAmount -= (price * qty);
+                        else totalAllAmount += (price * qty);
+                    } else {
+                        totalAllAmount += ((item.sellPrice || 0) * qty); 
+                    }
+                    hasInput = true; 
+                } 
             });
             const displayElement = document.getElementById('bulk-total-display');
             if (hasInput) { 
@@ -843,6 +1172,8 @@
         }
 
         function renderTable() {
+            if (currentView === 'analytics') return; 
+
             const thead = document.getElementById('table-head'); const tbody = document.getElementById('item-list');
             const isViewer = myRole === 'viewer';
             
@@ -861,8 +1192,9 @@
                     <th class="hide-viewer" style="text-align:center;">削除</th>
                 </tr>`; 
             } else { 
+                // ★ 変更: レジモードに「割引」カラムを追加 ★
                 thead.innerHTML = `<tr>
-                    <th>カテゴリ</th><th>商品名</th><th>取引内容</th><th>単価</th><th>在庫数</th>
+                    <th>カテゴリ</th><th>商品名</th><th>取引内容</th><th style="width: 80px; text-align: center;">割引</th><th>単価</th><th>在庫数</th>
                     <th class="hide-viewer">個数</th><th class="hide-viewer">小計</th>
                 </tr>`; 
             }
@@ -871,11 +1203,12 @@
             tbody.innerHTML = ''; const modeDef = menuTabs.find(m => m.id === currentMode);
             
             inventory.forEach((item, index) => {
-                if (currentCategory !== "すべて" && item.category !== currentCategory) return;
+                if (!currentCategories.includes("すべて") && !currentCategories.includes(item.category)) return;
+                
                 const tr = document.createElement('tr');
                 if (currentView === 'inventory') {
                     let moveBtns = '';
-                    if (currentCategory === 'すべて') {
+                    if (currentCategories.includes("すべて")) {
                         const isFirst = index === 0; const isLast = index === inventory.length - 1;
                         moveBtns = `<button class="btn-move hide-viewer" title="上に移動" ${isFirst ? 'disabled' : ''} onclick="moveItem(${index}, -1)">🔼</button><br><button class="btn-move hide-viewer" title="下に移動" ${isLast ? 'disabled' : ''} onclick="moveItem(${index}, 1)">🔽</button>`;
                     } else { moveBtns = `<span class="hide-viewer" style="font-size:10px; color:#adb5bd; line-height: 1;">「すべて」<br>のみ</span>`; }
@@ -895,33 +1228,51 @@
                         <td><input type="text" class="price-input lock-viewer" value="${(item.buyPrice || 0).toLocaleString()}" onfocus="this.value='${item.buyPrice || 0}'" onchange="updateItem(${index}, 'buyPrice', this.value)" style="color: #f44336;"> 円</td>
                         
                         <td style="font-weight: bold; font-size: 18px; color: #333;">${item.stock.toLocaleString()}</td>
-                        <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" oninput="calcTotal(${index})"></td>
+                        <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" value="${item.inputQty || ''}" oninput="calcTotal(${index})"></td>
                         <td class="hide-viewer" id="total-${index}" style="font-weight: bold; color: #0d6efd;">0円</td>
                         <td class="hide-viewer"><button class="btn-action ${modeDef ? modeDef.btnClass : 'green'}" onclick="executeAction(${index})">${modeDef ? modeDef.btnText : '実行'}</button></td>
                         <td class="hide-viewer" style="text-align: center;"><button class="btn-delete-item" onclick="deleteItem(${index})" title="アイテムを削除">🗑️</button></td>`;
                 } else {
+                    let dispPrice = item.tradeType === 'buy' ? (item.buyPrice || 0) : (item.sellPrice || 0);
+                    if ((item.tradeType || 'sell') === 'sell') {
+                        dispPrice = Math.max(0, dispPrice - DISCOUNT_AMOUNTS[item.discountRank || 'none']);
+                    }
+                    
+                    // ★ 変更: レジモードのUI (取引タイプの状態保持、割引ボタンの追加)
                     tr.innerHTML = `
                         <td style="color:#6c757d; font-weight:bold;">${item.category || '未設定'}</td>
                         <td style="font-size:16px; font-weight:bold;">${item.name}</td>
                         <td>
                             <select id="trade-${index}" class="lock-viewer" onchange="calcTotal(${index})" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; font-weight: bold;">
-                                <option value="sell">📤 販売 (客へ)</option>
-                                <option value="buy">📥 買取 (客から)</option>
+                                <option value="sell" ${(!item.tradeType || item.tradeType === 'sell') ? 'selected' : ''}>📤 販売 (客へ)</option>
+                                <option value="buy" ${(item.tradeType === 'buy') ? 'selected' : ''}>📥 買取 (客から)</option>
                             </select>
                         </td>
-                        <td id="price-disp-${index}" style="font-weight:bold;">${(item.sellPrice || 0).toLocaleString()} 円</td>
+                        <td style="text-align: center;">
+                            <button id="btn-discount-${index}" class="btn-discount rank-${item.discountRank || 'none'} lock-viewer" onclick="toggleDiscount(${index})" ${item.tradeType === 'buy' ? 'disabled style="opacity:0.5;"' : ''}>
+                                ${DISCOUNT_LABELS[item.discountRank || 'none']}
+                            </button>
+                        </td>
+                        <td id="price-disp-${index}" style="font-weight:bold; color: ${item.tradeType === 'buy' ? '#f44336' : '#333'};">${dispPrice.toLocaleString()} 円</td>
                         <td style="font-weight: bold; font-size: 18px; color: ${item.stock <= 0 ? '#f44336' : '#333'};">${item.stock.toLocaleString()}</td>
-                        <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" oninput="calcTotal(${index})"></td>
+                        <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" value="${item.inputQty || ''}" oninput="calcTotal(${index})"></td>
                         <td class="hide-viewer" id="total-${index}" style="font-weight: bold; color: #fd7e14;">0円</td>`;
                 }
                 tbody.appendChild(tr);
+            });
+            
+            // ★ 描画が終わったあとに、保持している値を使って小計を再計算して表示
+            inventory.forEach((item, index) => {
+                if (document.getElementById(`qty-${index}`)) {
+                    calcTotal(index);
+                }
             });
             updateBulkTotal();
         }
 
         async function moveItem(index, direction) {
             if (myRole === 'viewer') return;
-            if (currentCategory !== "すべて") return alert("並び替えは、カテゴリを「すべて」にしている時のみ可能です。");
+            if (!currentCategories.includes("すべて")) return alert("並び替えは、カテゴリを「すべて」にしている時のみ可能です。");
 
             if (direction === -1 && index > 0) {
                 const temp = inventory[index - 1]; inventory[index - 1] = inventory[index]; inventory[index] = temp;
@@ -931,32 +1282,66 @@
             await saveDataToFirebase();
         }
 
+        // ★ 変更: ローカルステートを更新しつつ、割引も計算するように修正 ★
         function calcTotal(index) {
-            const qtyStr = document.getElementById(`qty-${index}`).value;
-            const qty = Number(qtyStr.replace(/,/g, '')); 
+            const item = inventory[index];
+            const qtyInput = document.getElementById(`qty-${index}`);
+            
+            // 入力された個数をローカルステートに保存
+            if (qtyInput) item.inputQty = qtyInput.value;
+            
+            const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
             
             if (currentView === 'register') {
-                const tradeType = document.getElementById(`trade-${index}`).value;
-                const price = tradeType === 'sell' ? (inventory[index].sellPrice || 0) : (inventory[index].buyPrice || 0);
+                const tradeSelect = document.getElementById(`trade-${index}`);
+                // 取引タイプをローカルステートに保存
+                if (tradeSelect) item.tradeType = tradeSelect.value;
                 
-                document.getElementById(`price-disp-${index}`).innerText = `${price.toLocaleString()} 円`;
-                document.getElementById(`price-disp-${index}`).style.color = tradeType === 'buy' ? '#f44336' : '#333';
+                const tradeType = item.tradeType || 'sell';
+                let price = tradeType === 'sell' ? (item.sellPrice || 0) : (item.buyPrice || 0);
+                
+                // 販売のときのみ割引を適用
+                if (tradeType === 'sell') {
+                    const dAmount = DISCOUNT_AMOUNTS[item.discountRank || 'none'];
+                    price = Math.max(0, price - dAmount);
+                }
+                
+                // 単価の表示を更新
+                const priceDisp = document.getElementById(`price-disp-${index}`);
+                if (priceDisp) {
+                    priceDisp.innerText = `${price.toLocaleString()} 円`;
+                    priceDisp.style.color = tradeType === 'buy' ? '#f44336' : '#333';
+                }
+                
+                // 買取のときは割引ボタンをグレーアウト
+                const discountBtn = document.getElementById(`btn-discount-${index}`);
+                if (discountBtn) {
+                    discountBtn.disabled = (tradeType === 'buy');
+                    discountBtn.style.opacity = (tradeType === 'buy') ? '0.5' : '1';
+                }
 
-                if (!isNaN(qty) && qty > 0) { 
-                    const sign = tradeType === 'buy' ? '-' : '';
-                    const color = tradeType === 'buy' ? '#f44336' : '#0d6efd';
-                    document.getElementById(`total-${index}`).innerText = `${sign}${(qty * price).toLocaleString()}円`; 
-                    document.getElementById(`total-${index}`).style.color = color;
-                } else { 
-                    document.getElementById(`total-${index}`).innerText = `0円`; 
-                    document.getElementById(`total-${index}`).style.color = '#fd7e14';
+                // 小計の表示を更新
+                const totalDisp = document.getElementById(`total-${index}`);
+                if (totalDisp) {
+                    if (!isNaN(qty) && qty > 0) { 
+                        const sign = tradeType === 'buy' ? '-' : '';
+                        const color = tradeType === 'buy' ? '#f44336' : '#0d6efd';
+                        totalDisp.innerText = `${sign}${(qty * price).toLocaleString()}円`; 
+                        totalDisp.style.color = color;
+                    } else { 
+                        totalDisp.innerText = `0円`; 
+                        totalDisp.style.color = '#fd7e14';
+                    }
                 }
             } else {
-                const price = inventory[index].sellPrice || 0;
-                if(!isNaN(qty) && qty > 0) { 
-                    document.getElementById(`total-${index}`).innerText = `${(qty * price).toLocaleString()}円`; 
-                } else { 
-                    document.getElementById(`total-${index}`).innerText = `0円`; 
+                const price = item.sellPrice || 0;
+                const totalDisp = document.getElementById(`total-${index}`);
+                if (totalDisp) {
+                    if(!isNaN(qty) && qty > 0) { 
+                        totalDisp.innerText = `${(qty * price).toLocaleString()}円`; 
+                    } else { 
+                        totalDisp.innerText = `0円`; 
+                    }
                 }
             }
             updateBulkTotal();
@@ -1010,7 +1395,12 @@
             const catName = categories[index];
             if (!confirm(`削除しますか？`)) return;
             categories.splice(index, 1); await database.ref('rooms/' + currentServerId + '/settings/categories').set(categories);
-            if (currentCategory === catName) currentCategory = 'すべて';
+            
+            if (currentCategories.includes(catName)) {
+                currentCategories = currentCategories.filter(c => c !== catName);
+                if (currentCategories.length === 0) currentCategories = ['すべて'];
+            }
+
             inventory.forEach(item => { if (item.category === catName) item.category = ''; });
             await saveDataToFirebase(); 
         }
@@ -1074,11 +1464,17 @@
             
             currentServerId = document.getElementById('server-select').value; 
             saveServersLocal(); applyCurrentServerSettings();
-            isEditing = false; currentCategory = "すべて"; renderCategoryTabs(); inventory =[];
+            
+            isEditing = false; currentCategories = ["すべて"]; renderCategoryTabs(); inventory =[];
+            
             document.getElementById('item-list').innerHTML = `<tr><td colspan="11" style="text-align:center; font-weight:bold; color: #0d6efd;">🔄 切り替え中...</td></tr>`;
             
             updatePresence(); 
             updateBulkTotal(); listenToFirebase(); 
+            
+            if (currentView === 'analytics') {
+                document.getElementById('analytics-content').innerHTML = "";
+            }
         }
 
         function generateRoomId() { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let id = ''; for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length)); return id; }
@@ -1113,12 +1509,30 @@
         
         function renderCategoryTabs() {
             const container = document.getElementById('category-tabs');
-            let html = `<div class="category-tab ${currentCategory === 'すべて' ? 'active' : ''}" onclick="setCategory('すべて')">すべて</div>`;
-            categories.forEach(cat => { html += `<div class="category-tab ${currentCategory === cat ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</div>`; });
+            let html = `<div class="category-tab ${currentCategories.includes('すべて') ? 'active' : ''}" onclick="setCategory('すべて')">すべて</div>`;
+            categories.forEach(cat => { 
+                html += `<div class="category-tab ${currentCategories.includes(cat) ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</div>`; 
+            });
             html += `<div class="category-tab admin-only" style="background-color: #e9ecef; border-style: dashed; color: #333;" onclick="openModal('category-modal')">⚙️ 編集</div>`;
             container.innerHTML = html;
         }
-        function setCategory(cat) { currentCategory = cat; renderCategoryTabs(); renderTable(); }
+
+        function setCategory(cat) { 
+            if (cat === 'すべて') {
+                currentCategories = ['すべて'];
+            } else {
+                currentCategories = currentCategories.filter(c => c !== 'すべて');
+                
+                if (currentCategories.includes(cat)) {
+                    currentCategories = currentCategories.filter(c => c !== cat);
+                    if (currentCategories.length === 0) currentCategories = ['すべて'];
+                } else {
+                    currentCategories.push(cat);
+                }
+            }
+            renderCategoryTabs(); 
+            renderTable(); 
+        }
 
         async function updateItem(index, key, value) {
             if (myRole === 'viewer') return;
@@ -1130,7 +1544,7 @@
         }
         async function addNewItem() {
             if (myRole === 'viewer') return alert("権限がありません！");
-            let newCategory = currentCategory === "すべて" ? "" : currentCategory;
+            let newCategory = (currentCategories.length === 1 && !currentCategories.includes("すべて")) ? currentCategories[0] : "";
             inventory.push({ id: Date.now(), name: "新しいアイテム", category: newCategory, sellPrice: 0, buyPrice: 0, stock: 0, url: "" });
             await saveDataToFirebase();
         }
@@ -1142,8 +1556,11 @@
 
         async function executeAction(index) {
             if (myRole === 'viewer') return alert("権限がありません！");
-            const item = inventory[index]; const qtyInput = document.getElementById(`qty-${index}`);
-            const qty = Number(String(qtyInput.value).replace(/,/g, '')); const modeDef = menuTabs.find(m => m.id === currentMode);
+            const item = inventory[index]; 
+            // ★ 変更: ローカルのステートから取得
+            const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
+            const modeDef = menuTabs.find(m => m.id === currentMode);
+            
             if (isNaN(qty) || qty < 0) return alert("個数を正しく入力してください！");
             if (qty === 0 && modeDef.operation !== 'set') return alert("個数を入力してください！");
             
@@ -1162,18 +1579,18 @@
                 const message = { embeds: [{ title: `📦 [${serverName}] 在庫更新`, color: modeDef.operation === 'add' ? 3066993 : (modeDef.operation === 'set' ? 3447003 : 15158332), fields: [ { name: "アイテム", value: item.name, inline: true }, { name: "操作", value: modeDef.actionText, inline: true }, { name: modeDef.operation === 'set' ? "入力値" : "数量", value: `${qty} 個`, inline: true }, { name: "変動前", value: `${oldStock} 個`, inline: true }, { name: "変動後", value: `${item.stock} 個`, inline: true } ], timestamp: new Date().toISOString() }] };
                 fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
             }
-            qtyInput.value = ''; renderTable();
+            
+            // 実行後に個数リセット
+            item.inputQty = "";
+            renderTable();
         }
 
         async function executeBulkAction() {
             if (myRole === 'viewer') return alert("権限がありません！");
             const modeDef = menuTabs.find(m => m.id === currentMode); let targets =[];
             inventory.forEach((item, index) => {
-                const input = document.getElementById(`qty-${index}`);
-                if (input) { 
-                    const qty = Number(String(input.value).replace(/,/g, '')); 
-                    if (!isNaN(qty) && (qty > 0 || (qty === 0 && modeDef.operation === 'set'))) targets.push({ item: item, index: index, qty: qty }); 
-                }
+                const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
+                if (!isNaN(qty) && (qty > 0 || (qty === 0 && modeDef.operation === 'set'))) targets.push({ item: item, index: index, qty: qty }); 
             });
             if (targets.length === 0) return;
             if (modeDef.operation === 'sub' && targets.find(t => t.item.stock < t.qty)) return alert(`在庫不足あり`);
@@ -1186,6 +1603,10 @@
             });
             
             await saveDataToFirebase(); alert(`実行完了`);
+            
+            // 全てリセット
+            inventory.forEach(item => item.inputQty = "");
+            renderTable();
         }
     </script>
 </body>
