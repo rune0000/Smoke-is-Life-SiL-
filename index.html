@@ -398,14 +398,26 @@
             }
         }
 
+        // ★ 公開用リストにアイテム名と一緒に「価格(販売値)」を渡すように修正
         async function syncPublicShopInfo() {
             if (!currentReservationId || !currentServerId || myRole === 'viewer') return;
-            const itemList = inventory.filter(i => i.reservable !== false).map(item => item.name).filter(n => n);
-            const uniqueItems = [...new Set(itemList)];
+            
+            const uniqueItemsMap = {};
+            inventory.forEach(item => {
+                if (item.reservable !== false && item.name) {
+                    if (!uniqueItemsMap[item.name]) {
+                        uniqueItemsMap[item.name] = item.sellPrice || 0;
+                    }
+                }
+            });
+            const itemsData = Object.keys(uniqueItemsMap).map(name => {
+                return { name: name, price: uniqueItemsMap[name] };
+            });
+
             const serverName = servers.find(s => s.id === currentServerId)?.name || "店舗";
             try {
                 await database.ref('public_shop_info/' + currentReservationId).set({
-                    name: serverName, status: currentRsvStatus, items: uniqueItems
+                    name: serverName, status: currentRsvStatus, items: itemsData
                 });
             } catch(e) { console.error(e); }
         }
@@ -649,7 +661,6 @@
                 else if (t.trade === 'stockOut') { unitPrice = 0; typeLabel = "📦在庫出"; }
                 else if (t.trade === 'stockIn') { unitPrice = 0; typeLabel = "📦在庫入"; }
                 
-                // ★ 単価×個数の結果に、割増額（全体へのプラス）を足す
                 const totalAmount = (unitPrice * t.qty) + premiumAmount; 
                 
                 if (t.trade === 'sell' || t.trade === 'empSell' || t.trade === 'stockOut') {
@@ -703,7 +714,6 @@
                             price = Math.max(0, (price || 0) - DISCOUNT_AMOUNTS[item.discountRank || 'none']);
                         }
                         
-                        // ★ 全体の小計金額を計算してから割増を足す
                         let rowTotal = (price || 0) * qty;
                         if (item.tradeType === 'sell' || item.tradeType === 'buy' || !item.tradeType) {
                             rowTotal += PREMIUM_AMOUNTS[item.premiumRank || 'none'];
@@ -795,7 +805,6 @@
                 const tDisp = document.getElementById(`total-${index}`); 
                 if (tDisp) { 
                     if (!isNaN(qty) && qty > 0) { 
-                        // ★ 個数×単価の後に割増を足す
                         let premium = 0;
                         if (tradeType === 'buy' || tradeType === 'sell') {
                             premium = PREMIUM_AMOUNTS[item.premiumRank || 'none'];
