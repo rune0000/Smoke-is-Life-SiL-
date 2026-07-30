@@ -109,6 +109,16 @@
         .analytics-table td:first-child { text-align: left; font-weight: bold; color: #333; }
         .analytics-table tr:last-child td { border-bottom: none; }
 
+        /* ★ 作業ログ用：白・水色のストライプ（ゼブラ）デザイン ★ */
+        .stripe-table tbody tr:nth-child(odd) td { background-color: #ffffff; }
+        .stripe-table tbody tr:nth-child(even) td { background-color: #e6f7ff; }
+        
+        .btn-reset-log {
+            background-color: #f8f9fa; color: #f44336; border: 1px solid #f44336; font-size: 11px;
+            padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .btn-reset-log:hover { background-color: #f44336; color: white; }
+
         /* 権限コントロール */
         body.role-viewer .edit-only { display: none !important; }
         body.role-viewer .admin-only { display: none !important; }
@@ -248,6 +258,8 @@
             <button id="btn-mode-inv" class="btn-secondary" style="flex:1; background-color: #0d6efd; font-size:12px; padding:10px 5px;" onclick="switchView('inventory')">📦 在庫</button>
             <button id="btn-mode-reg" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('register')">🛒 レジ</button>
             <button id="btn-mode-ana" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('analytics')">📊 集計</button>
+            <!-- ★ 追加: 履歴タブボタン ★ -->
+            <button id="btn-mode-log" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('log')">📋 履歴</button>
         </div>
 
         <div class="server-section">
@@ -330,6 +342,12 @@
             <button class="btn-secondary" style="width: auto; background-color: #6c757d; padding: 10px 15px;" onclick="setThisWeek()">直近1週間</button>
         </div>
 
+        <!-- ★ 追加: ログ画面用のアクションヘッダー ★ -->
+        <div id="log-header-actions" class="header-actions" style="display: none; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; font-size: 18px; color: #333;">📋 作業ログ (履歴)</h2>
+            <button class="btn-reset-log admin-only" onclick="resetLogs()">🗑️ ログをリセット</button>
+        </div>
+
         <div id="normal-view-header">
             <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                 <h1 id="mode-title" style="margin: 0;">📦 仕入モード</h1>
@@ -346,9 +364,25 @@
             </div>
         </div>
 
+        <!-- 既存の在庫・レジ用テーブル -->
         <table id="main-table">
             <thead id="table-head"></thead>
             <tbody id="item-list"><tr><td colspan="11" style="text-align:center;">クラウドと接続中...</td></tr></tbody>
+        </table>
+
+        <!-- ★ 追加: 作業ログ用のテーブル ★ -->
+        <table id="log-table" class="stripe-table" style="display: none;">
+            <thead id="log-table-head">
+                <tr>
+                    <th style="width: 140px;">日時</th>
+                    <th style="width: 140px;">誰が (スタッフ)</th>
+                    <th style="width: 120px;">操作</th>
+                    <th>詳細 (何を何個)</th>
+                </tr>
+            </thead>
+            <tbody id="log-list">
+                <tr><td colspan="4" style="text-align:center;">読込中...</td></tr>
+            </tbody>
         </table>
 
         <div id="analytics-content" style="display: none;"></div>
@@ -369,7 +403,8 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        let dbRefInventory = null; let dbRefStaffs = null; let dbRefOrgs = null; let dbRefSettings = null; let dbRefMembers = null;
+        // ★ 追加: dbRefLogs
+        let dbRefInventory = null; let dbRefStaffs = null; let dbRefOrgs = null; let dbRefSettings = null; let dbRefMembers = null; let dbRefLogs = null;
 
         let myUserId = localStorage.getItem('fivem_user_id');
         if (!myUserId) {
@@ -398,6 +433,7 @@
         let servers = []; let currentServerId = null; let staffs = []; let orgs = [];
         let currentView = 'inventory'; 
         let isEditing = false;
+        let actionLogs = []; // ★ 追加: ログ保持用配列
 
         document.addEventListener('focusin', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = true; });
         document.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = false; });
@@ -501,35 +537,48 @@
             }
         }
 
+        // ★ 変更: switchViewにlogタブの処理を追加
         function switchView(view) {
             currentView = view;
             const btnInv = document.getElementById('btn-mode-inv'); 
             const btnReg = document.getElementById('btn-mode-reg');
             const btnAna = document.getElementById('btn-mode-ana');
+            const btnLog = document.getElementById('btn-mode-log');
             
             const invControls = document.getElementById('inventory-controls'); 
             const regControls = document.getElementById('register-controls');
             
             const headerActions = document.getElementById('inv-header-actions'); 
             const anaHeaderActions = document.getElementById('ana-header-actions'); 
+            const logHeaderActions = document.getElementById('log-header-actions');
             
             const normalHeader = document.getElementById('normal-view-header');
             const mainTable = document.getElementById('main-table');
+            const logTable = document.getElementById('log-table');
             const analyticsContent = document.getElementById('analytics-content');
 
             btnInv.style.backgroundColor = '#6c757d'; 
             btnReg.style.backgroundColor = '#6c757d';
             btnAna.style.backgroundColor = '#6c757d';
+            btnLog.style.backgroundColor = '#6c757d';
+
+            // 全て一旦非表示
+            invControls.style.display = 'none'; 
+            regControls.style.display = 'none';
+            headerActions.style.display = 'none'; 
+            anaHeaderActions.style.display = 'none';
+            logHeaderActions.style.display = 'none';
+            normalHeader.style.display = 'none';
+            mainTable.style.display = 'none';
+            logTable.style.display = 'none';
+            analyticsContent.style.display = 'none';
 
             if (view === 'inventory') {
                 btnInv.style.backgroundColor = '#0d6efd'; 
                 invControls.style.display = 'block'; 
-                regControls.style.display = 'none';
                 headerActions.style.display = 'flex'; 
-                anaHeaderActions.style.display = 'none';
                 normalHeader.style.display = 'block';
                 mainTable.style.display = 'table';
-                analyticsContent.style.display = 'none';
                 
                 document.getElementById('btn-delete-tab').style.display = 'inline-block';
                 const modeDef = menuTabs.find(m => m.id === currentMode);
@@ -539,13 +588,9 @@
                 renderTable();
             } else if (view === 'register') {
                 btnReg.style.backgroundColor = '#fd7e14'; 
-                invControls.style.display = 'none'; 
                 regControls.style.display = 'block';
-                headerActions.style.display = 'none'; 
-                anaHeaderActions.style.display = 'none';
                 normalHeader.style.display = 'block';
                 mainTable.style.display = 'table';
-                analyticsContent.style.display = 'none';
                 
                 document.getElementById('btn-delete-tab').style.display = 'none';
                 document.getElementById('mode-title').innerText = '🛒 会計(レジ)モード';
@@ -554,18 +599,72 @@
                 renderTable();
             } else if (view === 'analytics') {
                 btnAna.style.backgroundColor = '#6f42c1'; 
-                invControls.style.display = 'none'; 
-                regControls.style.display = 'none';
-                headerActions.style.display = 'none'; 
                 anaHeaderActions.style.display = 'flex';
-                normalHeader.style.display = 'none';
-                mainTable.style.display = 'none';
                 analyticsContent.style.display = ''; 
                 
                 if (!document.getElementById('ana-start').value) {
                     setThisWeek();
                 }
+            } else if (view === 'log') {
+                btnLog.style.backgroundColor = '#20c997'; // 緑系
+                logHeaderActions.style.display = 'flex';
+                logTable.style.display = 'table';
+                renderLogs();
             }
+        }
+
+        // ★ 追加: ログテーブルの描画関数
+        function renderLogs() {
+            const tbody = document.getElementById('log-list');
+            tbody.innerHTML = '';
+            if (actionLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">履歴がありません</td></tr>';
+                return;
+            }
+
+            actionLogs.forEach(log => {
+                const tr = document.createElement('tr');
+                const date = new Date(log.timestamp);
+                const dateStr = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                
+                // 操作タイプによってラベルの色を変える
+                let typeColor = "#e9ecef";
+                let textColor = "#333";
+                if (log.type.includes("レジ")) { typeColor = "#fff3cd"; textColor = "#856404"; }
+                if (log.type.includes("在庫")) { typeColor = "#d1e7dd"; textColor = "#0f5132"; }
+
+                tr.innerHTML = `
+                    <td style="font-size: 13px; color: #6c757d; font-weight: bold;">${dateStr}</td>
+                    <td style="font-weight: bold; color: #333;">${log.user}</td>
+                    <td><span style="background: ${typeColor}; color: ${textColor}; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${log.type}</span></td>
+                    <td style="font-size: 14px; font-weight: bold; color: #495057;">${log.detail}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ★ 追加: ログを保存する関数
+        async function saveLog(user, type, detail) {
+            if (!currentServerId || myRole === 'viewer') return;
+            try {
+                await database.ref('rooms/' + currentServerId + '/logs').push({
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    user: user,
+                    type: type,
+                    detail: detail
+                });
+            } catch(e) { console.error("ログ保存エラー", e); }
+        }
+
+        // ★ 追加: ログをリセットする関数 (Adminのみ)
+        async function resetLogs() {
+            if (myRole !== 'admin') return alert("権限がありません。管理者のみ実行可能です。");
+            if (!confirm("本当にすべての作業ログを削除しますか？\n（この操作は元に戻せません）")) return;
+            
+            try {
+                await database.ref('rooms/' + currentServerId + '/logs').remove();
+                alert("作業ログをリセットしました。");
+            } catch(e) { console.error(e); }
         }
 
         async function fetchAndRenderAnalytics() {
@@ -702,6 +801,7 @@
             if (dbRefOrgs) dbRefOrgs.off(); 
             if (dbRefSettings) dbRefSettings.off();
             if (dbRefMembers) dbRefMembers.off();
+            if (dbRefLogs) dbRefLogs.off(); // ★ 追加
             
             dbRefMembers = database.ref('rooms/' + currentServerId + '/members');
             dbRefMembers.on('value', (snapshot) => {
@@ -730,7 +830,6 @@
                         const existing = inventory.find(i => i.id === item.id) || {};
                         let sPrice = item.sellPrice !== undefined ? item.sellPrice : (item.price || 0);
                         let bPrice = item.buyPrice !== undefined ? item.buyPrice : (item.price || 0);
-                        // 古い empPrice があれば empSellPrice に引き継ぐための対応
                         let eSellPrice = item.empSellPrice !== undefined ? item.empSellPrice : (item.empPrice || 0);
                         let eBuyPrice = item.empBuyPrice !== undefined ? item.empBuyPrice : 0;
                         
@@ -803,6 +902,21 @@
                 if (document.getElementById('category-modal').style.display === 'flex') {
                     renderCategoryEditList();
                 }
+            });
+
+            // ★ 追加: 作業ログ(履歴)のリスナー (最新100件を取得)
+            dbRefLogs = database.ref('rooms/' + currentServerId + '/logs');
+            dbRefLogs.limitToLast(100).on('value', (snapshot) => {
+                const data = snapshot.val();
+                actionLogs = [];
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        actionLogs.push({ id: key, ...data[key] });
+                    });
+                    // 新しいものが上に来るようにソート
+                    actionLogs.sort((a, b) => b.timestamp - a.timestamp);
+                }
+                if (currentView === 'log') renderLogs();
             });
         }
 
@@ -1066,6 +1180,18 @@
             try {
                 await database.ref('rooms/' + currentServerId + '/sales/' + yearMonth).push(saleData);
                 await saveDataToFirebase();
+                
+                // ★ ログ保存処理を追加
+                let logDetails = targets.map(t => {
+                    let tLabel = "販売";
+                    if (t.trade === 'buy') tLabel = "買取";
+                    else if (t.trade === 'empSell') tLabel = "従業員販";
+                    else if (t.trade === 'empBuy') tLabel = "従業員買";
+                    return `${t.item.name} (${tLabel}): ${t.qty}個`;
+                }).join(" / ");
+                if (orgName) logDetails += ` [販売先: ${orgName}]`;
+                await saveLog(staffName, "🛒 レジ精算", logDetails);
+
                 const webhookUrl = document.getElementById('webhook-url').value; const serverName = servers.find(s => s.id === currentServerId).name;
                 if (webhookUrl) {
                     let titleStr = `🛒[${serverName}] 会計・精算完了`;
@@ -1189,7 +1315,7 @@
         }
 
         function renderTable() {
-            if (currentView === 'analytics') return; 
+            if (currentView === 'analytics' || currentView === 'log') return; 
 
             const thead = document.getElementById('table-head'); const tbody = document.getElementById('item-list');
             const isViewer = myRole === 'viewer';
@@ -1499,6 +1625,8 @@
             
             if (currentView === 'analytics') {
                 document.getElementById('analytics-content').innerHTML = "";
+            } else if (currentView === 'log') {
+                document.getElementById('log-list').innerHTML = `<tr><td colspan="4" style="text-align:center;">読込中...</td></tr>`;
             }
         }
 
@@ -1596,6 +1724,9 @@
             else if (modeDef.operation === 'set') item.stock = qty; 
             
             await saveDataToFirebase(); 
+            
+            // ★ ログ保存処理を追加
+            await saveLog(myUserName, "📦 在庫更新", `${item.name}: ${qty}個 (${modeDef.actionText})`);
 
             const webhookUrl = document.getElementById('webhook-url').value;
             const serverName = servers.find(s => s.id === currentServerId).name;
@@ -1625,7 +1756,13 @@
                 else if (modeDef.operation === 'set') t.item.stock = t.qty; 
             });
             
-            await saveDataToFirebase(); alert(`実行完了`);
+            await saveDataToFirebase(); 
+            
+            // ★ ログ保存処理を追加
+            let logDetails = targets.map(t => `${t.item.name}: ${t.qty}個`).join(", ");
+            await saveLog(myUserName, "📦 在庫一括更新", `${modeDef.actionText} -> ${logDetails}`);
+
+            alert(`実行完了`);
             
             inventory.forEach(item => item.inputQty = "");
             renderTable();
