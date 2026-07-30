@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -109,7 +110,7 @@
         .analytics-table td:first-child { text-align: left; font-weight: bold; color: #333; }
         .analytics-table tr:last-child td { border-bottom: none; }
 
-        /* ★ 作業ログ用：白・水色のストライプ（ゼブラ）デザイン ★ */
+        /* 作業ログ用：白・水色のストライプ（ゼブラ）デザイン */
         .stripe-table tbody tr:nth-child(odd) td { background-color: #ffffff; }
         .stripe-table tbody tr:nth-child(even) td { background-color: #e6f7ff; }
         
@@ -258,7 +259,6 @@
             <button id="btn-mode-inv" class="btn-secondary" style="flex:1; background-color: #0d6efd; font-size:12px; padding:10px 5px;" onclick="switchView('inventory')">📦 在庫</button>
             <button id="btn-mode-reg" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('register')">🛒 レジ</button>
             <button id="btn-mode-ana" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('analytics')">📊 集計</button>
-            <!-- ★ 追加: 履歴タブボタン ★ -->
             <button id="btn-mode-log" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('log')">📋 履歴</button>
         </div>
 
@@ -342,7 +342,7 @@
             <button class="btn-secondary" style="width: auto; background-color: #6c757d; padding: 10px 15px;" onclick="setThisWeek()">直近1週間</button>
         </div>
 
-        <!-- ★ 追加: ログ画面用のアクションヘッダー ★ -->
+        <!-- ログ画面用のアクションヘッダー -->
         <div id="log-header-actions" class="header-actions" style="display: none; justify-content: space-between; align-items: center;">
             <h2 style="margin: 0; font-size: 18px; color: #333;">📋 作業ログ (履歴)</h2>
             <button class="btn-reset-log admin-only" onclick="resetLogs()">🗑️ ログをリセット</button>
@@ -364,13 +364,13 @@
             </div>
         </div>
 
-        <!-- 既存の在庫・レジ用テーブル -->
+        <!-- 在庫・レジ用テーブル -->
         <table id="main-table">
             <thead id="table-head"></thead>
             <tbody id="item-list"><tr><td colspan="11" style="text-align:center;">クラウドと接続中...</td></tr></tbody>
         </table>
 
-        <!-- ★ 追加: 作業ログ用のテーブル ★ -->
+        <!-- 作業ログ用のテーブル -->
         <table id="log-table" class="stripe-table" style="display: none;">
             <thead id="log-table-head">
                 <tr>
@@ -403,7 +403,6 @@
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        // ★ 追加: dbRefLogs
         let dbRefInventory = null; let dbRefStaffs = null; let dbRefOrgs = null; let dbRefSettings = null; let dbRefMembers = null; let dbRefLogs = null;
 
         let myUserId = localStorage.getItem('fivem_user_id');
@@ -433,7 +432,7 @@
         let servers = []; let currentServerId = null; let staffs = []; let orgs = [];
         let currentView = 'inventory'; 
         let isEditing = false;
-        let actionLogs = []; // ★ 追加: ログ保持用配列
+        let actionLogs = []; 
 
         document.addEventListener('focusin', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = true; });
         document.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = false; });
@@ -537,7 +536,6 @@
             }
         }
 
-        // ★ 変更: switchViewにlogタブの処理を追加
         function switchView(view) {
             currentView = view;
             const btnInv = document.getElementById('btn-mode-inv'); 
@@ -562,7 +560,6 @@
             btnAna.style.backgroundColor = '#6c757d';
             btnLog.style.backgroundColor = '#6c757d';
 
-            // 全て一旦非表示
             invControls.style.display = 'none'; 
             regControls.style.display = 'none';
             headerActions.style.display = 'none'; 
@@ -606,14 +603,13 @@
                     setThisWeek();
                 }
             } else if (view === 'log') {
-                btnLog.style.backgroundColor = '#20c997'; // 緑系
+                btnLog.style.backgroundColor = '#20c997';
                 logHeaderActions.style.display = 'flex';
                 logTable.style.display = 'table';
                 renderLogs();
             }
         }
 
-        // ★ 追加: ログテーブルの描画関数
         function renderLogs() {
             const tbody = document.getElementById('log-list');
             tbody.innerHTML = '';
@@ -627,7 +623,6 @@
                 const date = new Date(log.timestamp);
                 const dateStr = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
                 
-                // 操作タイプによってラベルの色を変える
                 let typeColor = "#e9ecef";
                 let textColor = "#333";
                 if (log.type.includes("レジ")) { typeColor = "#fff3cd"; textColor = "#856404"; }
@@ -643,7 +638,6 @@
             });
         }
 
-        // ★ 追加: ログを保存する関数
         async function saveLog(user, type, detail) {
             if (!currentServerId || myRole === 'viewer') return;
             try {
@@ -656,7 +650,6 @@
             } catch(e) { console.error("ログ保存エラー", e); }
         }
 
-        // ★ 追加: ログをリセットする関数 (Adminのみ)
         async function resetLogs() {
             if (myRole !== 'admin') return alert("権限がありません。管理者のみ実行可能です。");
             if (!confirm("本当にすべての作業ログを削除しますか？\n（この操作は元に戻せません）")) return;
@@ -722,7 +715,7 @@
                         if (!orgSummary[org].items[it.name]) {
                             orgSummary[org].items[it.name] = { sell: 0, buy: 0, total: 0 };
                         }
-                        if (it.trade === 'sell' || it.trade === 'empSell') {
+                        if (it.trade === 'sell' || it.trade === 'empSell' || it.trade === 'stockOut') {
                             orgSummary[org].items[it.name].sell += it.qty;
                             orgSummary[org].items[it.name].total += it.total; 
                         } else {
@@ -801,7 +794,7 @@
             if (dbRefOrgs) dbRefOrgs.off(); 
             if (dbRefSettings) dbRefSettings.off();
             if (dbRefMembers) dbRefMembers.off();
-            if (dbRefLogs) dbRefLogs.off(); // ★ 追加
+            if (dbRefLogs) dbRefLogs.off(); 
             
             dbRefMembers = database.ref('rooms/' + currentServerId + '/members');
             dbRefMembers.on('value', (snapshot) => {
@@ -841,7 +834,6 @@
                             buyPrice: bPrice,
                             empSellPrice: eSellPrice,
                             empBuyPrice: eBuyPrice,
-                            // ローカルの状態を保持
                             inputQty: existing.inputQty || "",
                             tradeType: existing.tradeType || "sell",
                             discountRank: existing.discountRank || "none"
@@ -904,7 +896,6 @@
                 }
             });
 
-            // ★ 追加: 作業ログ(履歴)のリスナー (最新100件を取得)
             dbRefLogs = database.ref('rooms/' + currentServerId + '/logs');
             dbRefLogs.limitToLast(100).on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -913,7 +904,6 @@
                     Object.keys(data).forEach(key => {
                         actionLogs.push({ id: key, ...data[key] });
                     });
-                    // 新しいものが上に来るようにソート
                     actionLogs.sort((a, b) => b.timestamp - a.timestamp);
                 }
                 if (currentView === 'log') renderLogs();
@@ -1155,19 +1145,25 @@
                 } else if (t.trade === 'empBuy') {
                     unitPrice = t.item.empBuyPrice || 0;
                     typeLabel = "👔従業員買";
+                } else if (t.trade === 'stockOut') {
+                    unitPrice = 0;
+                    typeLabel = "📦在庫出";
+                } else if (t.trade === 'stockIn') {
+                    unitPrice = 0;
+                    typeLabel = "📦在庫入";
                 }
 
                 const totalAmount = unitPrice * t.qty; 
                 
-                if (t.trade === 'sell' || t.trade === 'empSell') {
+                if (t.trade === 'sell' || t.trade === 'empSell' || t.trade === 'stockOut') {
                     totalAllAmount += totalAmount; 
-                    totalSellQty += t.qty;
+                    totalSellQty += (t.trade === 'stockOut') ? 0 : t.qty;
                     t.item.stock -= t.qty; 
                     soldItems.push({ name: t.item.name, trade: t.trade, price: unitPrice, qty: t.qty, total: totalAmount });
                     reportLines.push(`・[${typeLabel}] ${t.item.name} ${discountText} x ${t.qty.toLocaleString()}個 (+${totalAmount.toLocaleString()}円)`);
                 } else {
                     totalAllAmount -= totalAmount; 
-                    totalBuyQty += t.qty;
+                    totalBuyQty += (t.trade === 'stockIn') ? 0 : t.qty;
                     t.item.stock += t.qty; 
                     soldItems.push({ name: t.item.name, trade: t.trade, price: unitPrice, qty: t.qty, total: totalAmount });
                     reportLines.push(`・[${typeLabel}] ${t.item.name} x ${t.qty.toLocaleString()}個 (-${totalAmount.toLocaleString()}円)`);
@@ -1181,12 +1177,13 @@
                 await database.ref('rooms/' + currentServerId + '/sales/' + yearMonth).push(saleData);
                 await saveDataToFirebase();
                 
-                // ★ ログ保存処理を追加
                 let logDetails = targets.map(t => {
                     let tLabel = "販売";
                     if (t.trade === 'buy') tLabel = "買取";
                     else if (t.trade === 'empSell') tLabel = "従業員販";
                     else if (t.trade === 'empBuy') tLabel = "従業員買";
+                    else if (t.trade === 'stockOut') tLabel = "在庫のみ(減)";
+                    else if (t.trade === 'stockIn') tLabel = "在庫のみ(増)";
                     return `${t.item.name} (${tLabel}): ${t.qty}個`;
                 }).join(" / ");
                 if (orgName) logDetails += ` [販売先: ${orgName}]`;
@@ -1256,6 +1253,7 @@
                         if (it.trade === 'buy') typeStr = "[買取]";
                         else if (it.trade === 'empSell') typeStr = "[従業員販]";
                         else if (it.trade === 'empBuy') typeStr = "[従業員買]";
+                        else if (it.trade === 'stockOut' || it.trade === 'stockIn') typeStr = "[在庫のみ]";
                         
                         const key = `${typeStr} ${it.name}`;
                         staffSummary[sale.staff].items[key] = (staffSummary[sale.staff].items[key] || 0) + it.qty;
@@ -1290,13 +1288,14 @@
                         else if (tradeType === 'buy') price = (item.buyPrice || 0);
                         else if (tradeType === 'empSell') price = (item.empSellPrice || 0);
                         else if (tradeType === 'empBuy') price = (item.empBuyPrice || 0);
+                        else if (tradeType === 'stockOut' || tradeType === 'stockIn') price = 0;
                         
                         if (tradeType === 'sell') {
                             const dAmount = DISCOUNT_AMOUNTS[item.discountRank || 'none'];
                             price = Math.max(0, price - dAmount);
                         }
                         
-                        if (tradeType === 'buy' || tradeType === 'empBuy') totalAllAmount -= (price * qty);
+                        if (tradeType === 'buy' || tradeType === 'empBuy' || tradeType === 'stockIn') totalAllAmount -= (price * qty);
                         else totalAllAmount += (price * qty);
                     } else {
                         totalAllAmount += ((item.sellPrice || 0) * qty); 
@@ -1383,6 +1382,7 @@
                     if (item.tradeType === 'buy') { dispPrice = (item.buyPrice || 0); priceColor = '#f44336'; }
                     else if (item.tradeType === 'empSell') { dispPrice = (item.empSellPrice || 0); priceColor = '#6f42c1'; }
                     else if (item.tradeType === 'empBuy') { dispPrice = (item.empBuyPrice || 0); priceColor = '#d63384'; }
+                    else if (item.tradeType === 'stockOut' || item.tradeType === 'stockIn') { dispPrice = 0; priceColor = '#adb5bd'; }
                     else { dispPrice = (item.sellPrice || 0); priceColor = '#333'; }
 
                     if ((item.tradeType || 'sell') === 'sell') {
@@ -1398,10 +1398,12 @@
                                 <option value="buy" ${(item.tradeType === 'buy') ? 'selected' : ''}>📥 買取 (客から)</option>
                                 <option value="empSell" ${(item.tradeType === 'empSell') ? 'selected' : ''}>👔 従業員販</option>
                                 <option value="empBuy" ${(item.tradeType === 'empBuy') ? 'selected' : ''}>👔 従業員買</option>
+                                <option value="stockOut" ${(item.tradeType === 'stockOut') ? 'selected' : ''}>📦 在庫出 (0円)</option>
+                                <option value="stockIn" ${(item.tradeType === 'stockIn') ? 'selected' : ''}>📦 在庫入 (0円)</option>
                             </select>
                         </td>
                         <td style="text-align: center;">
-                            <button id="btn-discount-${index}" class="btn-discount rank-${item.discountRank || 'none'} lock-viewer" onclick="toggleDiscount(${index})" ${(item.tradeType === 'buy' || item.tradeType === 'empSell' || item.tradeType === 'empBuy') ? 'disabled style="opacity:0.5;"' : ''}>
+                            <button id="btn-discount-${index}" class="btn-discount rank-${item.discountRank || 'none'} lock-viewer" onclick="toggleDiscount(${index})" ${(item.tradeType !== 'sell') ? 'disabled style="opacity:0.5;"' : ''}>
                                 ${DISCOUNT_LABELS[item.discountRank || 'none']}
                             </button>
                         </td>
@@ -1453,6 +1455,7 @@
                 else if (tradeType === 'buy') { price = (item.buyPrice || 0); priceColor = '#f44336'; totalColor = '#f44336'; }
                 else if (tradeType === 'empSell') { price = (item.empSellPrice || 0); priceColor = '#6f42c1'; totalColor = '#6f42c1'; }
                 else if (tradeType === 'empBuy') { price = (item.empBuyPrice || 0); priceColor = '#d63384'; totalColor = '#d63384'; }
+                else if (tradeType === 'stockOut' || tradeType === 'stockIn') { price = 0; priceColor = '#adb5bd'; totalColor = '#adb5bd'; }
                 
                 if (tradeType === 'sell') {
                     const dAmount = DISCOUNT_AMOUNTS[item.discountRank || 'none'];
@@ -1474,7 +1477,7 @@
                 const totalDisp = document.getElementById(`total-${index}`);
                 if (totalDisp) {
                     if (!isNaN(qty) && qty > 0) { 
-                        const sign = (tradeType === 'buy' || tradeType === 'empBuy') ? '-' : '';
+                        const sign = (tradeType === 'buy' || tradeType === 'empBuy' || tradeType === 'stockIn') ? '-' : '';
                         totalDisp.innerText = `${sign}${(qty * price).toLocaleString()}円`; 
                         totalDisp.style.color = totalColor;
                     } else { 
@@ -1724,8 +1727,6 @@
             else if (modeDef.operation === 'set') item.stock = qty; 
             
             await saveDataToFirebase(); 
-            
-            // ★ ログ保存処理を追加
             await saveLog(myUserName, "📦 在庫更新", `${item.name}: ${qty}個 (${modeDef.actionText})`);
 
             const webhookUrl = document.getElementById('webhook-url').value;
@@ -1757,8 +1758,6 @@
             });
             
             await saveDataToFirebase(); 
-            
-            // ★ ログ保存処理を追加
             let logDetails = targets.map(t => `${t.item.name}: ${t.qty}個`).join(", ");
             await saveLog(myUserName, "📦 在庫一括更新", `${modeDef.actionText} -> ${logDetails}`);
 
