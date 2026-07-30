@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -6,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FiveM 在庫・販売管理 (POSレジ＆クラウド同期)</title>
     
-    <!-- ★ Firebaseを動かすためのコード ★ -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
@@ -15,60 +13,43 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; background-color: var(--bg-color); }
         .sidebar { width: 280px; background-color: #343a40; color: white; display: flex; flex-direction: column; }
         .sidebar h2 { text-align: center; font-size: 16px; margin-bottom: 15px; margin-top: 0; }
-        
-        /* プロフィールエリア */
         .user-profile { padding: 15px; background: #212529; border-bottom: 1px solid #1a1d20; }
         .user-profile label { font-size: 11px; color: #adb5bd; display: block; margin-bottom: 5px; font-weight: bold;}
         .user-profile input { width: 100%; padding: 8px; box-sizing: border-box; border-radius: 4px; border: 1px solid #495057; background: #343a40; color: #fff; font-size: 14px; font-weight: bold; }
-        
         .server-section { padding: 15px; border-bottom: 1px solid #495057; margin-bottom: 15px; }
         .server-select { width: 100%; padding: 8px; border-radius: 4px; border: none; margin-bottom: 10px; font-weight: bold; cursor: pointer; }
         .btn-secondary { width: 100%; background-color: #6c757d; font-size: 12px; padding: 6px; border: none; border-radius: 4px; color: white; cursor: pointer; font-weight: bold;}
         .btn-secondary:hover { opacity: 0.8; }
-        
-        /* メンバーリスト (サイドバー) */
         .members-sidebar { padding: 0 15px 15px 15px; border-bottom: 1px solid #495057; margin-bottom: 15px; }
         .online-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #4CAF50; margin-right: 6px; box-shadow: 0 0 5px #4CAF50; }
         .offline-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #6c757d; margin-right: 6px; }
         .member-list-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .member-list-item:last-child { border-bottom: none; }
-
         .tab { padding: 15px 20px; cursor: pointer; transition: 0.3s; font-weight: bold; display: flex; align-items: center; gap: 8px; }
         .tab:hover { background-color: #495057; }
         .tab.active { background-color: #0d6efd; border-left: 5px solid #fff; }
         .btn-add-tab { text-align: center; padding: 12px; cursor: pointer; color: #adb5bd; font-size: 13px; font-weight: bold; border-bottom: 1px solid #495057; }
         .btn-add-tab:hover { color: white; background-color: #495057; }
-        
         #register-controls { background-color: rgba(0,0,0,0.2); margin: 10px 15px; padding: 15px !important; border-radius: 8px; border: 1px solid #495057; }
         #register-controls label { display: block; margin-bottom: 10px; font-size: 12px; color: #f8cb00; text-transform: uppercase; letter-spacing: 1px; }
         #staff-select, #org-select { width: 100%; height: 42px; padding: 0 10px; border-radius: 6px; border: 2px solid var(--info-color); background-color: #343a40; color: #fff; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 12px; }
         .btn-staff-edit { background-color: transparent; color: #adb5bd; border: 1px dashed #6c757d; width: 100%; padding: 6px; font-size: 11px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
-        .btn-staff-edit:hover { color: white; border-color: white; background-color: rgba(255,255,255,0.1); }
-
         .settings { margin-top: auto; padding: 20px; background-color: #2b3035; border-top: 1px solid #1a1d20; overflow-y: auto; max-height: 40vh; }
         .settings label { font-size: 12px; color: #adb5bd; font-weight: bold; }
         .settings input, .settings select { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; box-sizing: border-box; border-radius: 4px; border: none; background-color: #fff; color: #333; }
         .btn-delete-server { margin-top: 5px; width: 100%; background-color: transparent; border: 1px solid #f44336; color: #f44336; font-size: 12px; padding: 6px; cursor: pointer; transition: 0.2s; border-radius: 4px; }
-        .btn-delete-server:hover { background-color: #f44336; color: white; }
-        
         .content { flex-grow: 1; padding: 30px; overflow-y: auto; }
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .category-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
         .category-tab { padding: 8px 16px; background-color: #fff; border: 1px solid var(--border-color); border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold; color: #6c757d; transition: all 0.2s ease; }
-        .category-tab:hover { background-color: #f8f9fa; border-color: #adb5bd; }
         .category-tab.active { background-color: #343a40; color: white; border-color: #343a40; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; color: white; transition: 0.2s; }
-        button:hover { opacity: 0.8; }
         .btn-add { background-color: var(--info-color); }
         .btn-action.green { background-color: var(--primary-color); }
         .btn-action.red { background-color: var(--danger-color); }
         .btn-action.blue { background-color: var(--info-color); }
         .btn-action.orange { background-color: var(--warning-color); }
-        .btn-delete-item { background-color: transparent; color: #f44336; font-size: 18px; padding: 5px; border: none; cursor: pointer; transition: transform 0.2s; }
-        .btn-delete-item:hover { transform: scale(1.2); opacity: 1; }
+        .btn-delete-item { background-color: transparent; color: #f44336; font-size: 18px; padding: 5px; border: none; cursor: pointer;}
         .btn-delete-tab { background-color: transparent; color: #6c757d; border: 1px solid #ccc; font-size: 12px; padding: 4px 8px; }
-        .btn-delete-tab:hover { background-color: #f44336; color: white; border-color: #f44336; }
-        
         table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
         th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
         th { background-color: #e9ecef; }
@@ -76,179 +57,62 @@
         .input-number { width: 70px; } .price-input { width: 80px; }
         .category-select { padding: 5px; border: none; background-color: transparent; font-size: 14px; cursor: pointer; color: #333; font-weight: bold; }
         
-        /* 割引ランクボタンのスタイル */
+        /* 割引ボタン */
         .btn-discount { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; background: #fff; font-weight: bold; width: 100%; white-space: nowrap; transition: 0.2s; }
         .btn-discount:hover { opacity: 0.8; }
         .btn-discount.rank-none { color: #6c757d; border-color: #ced4da; }
         .btn-discount.rank-normal { background-color: #e7f1ff; color: #0d6efd; border-color: #b6d4fe; }
-        .btn-discount.rank-silver { background-color: #f8f9fa; color: #495057; border-color: #adb5bd; background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); }
-        .btn-discount.rank-gold { background-color: #fff3cd; color: #856404; border-color: #ffeeba; background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); text-shadow: 0 1px 1px rgba(255,255,255,0.5); }
+        .btn-discount.rank-silver { background-color: #f8f9fa; color: #495057; border-color: #adb5bd; }
+        .btn-discount.rank-gold { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
+
+        /* 割増ボタン */
+        .btn-premium { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; background: #fff; font-weight: bold; width: 100%; white-space: nowrap; transition: 0.2s; }
+        .btn-premium:hover { opacity: 0.8; }
+        .btn-premium.rank-none { color: #6c757d; border-color: #ced4da; }
+        .btn-premium.rank-p1000 { background-color: #ffebee; color: #c62828; border-color: #ffcdd2; }
+        .btn-premium.rank-p2000 { background-color: #ffcdd2; color: #b71c1c; border-color: #ef9a9a; }
+        .btn-premium.rank-p3000 { background-color: #ef9a9a; color: #880e4f; border-color: #e57373; }
+        .btn-premium.rank-p4000 { background-color: #e57373; color: #fff; border-color: #ef5350; }
+        .btn-premium.rank-p5000 { background-color: #f44336; color: #fff; border-color: #d32f2f; }
 
         .sync-status { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 14px; padding: 10px 15px; border-radius: 5px; background-color: #e8f5e9; color: #198754; border: 1px solid #c3e6cb; }
         .sync-dot { width: 12px; height: 12px; background-color: #198754; border-radius: 50%; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
-        .btn-move { background: transparent; border: none; font-size: 14px; padding: 2px; cursor: pointer; color: #6c757d; transition: 0.2s; }
-        .btn-move:hover { transform: scale(1.3); color: #000; }
-        .btn-move:disabled { opacity: 0.2; cursor: not-allowed; transform: none; }
-
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 320px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .modal-content label { display: block; margin-top: 15px; font-size: 13px; font-weight: bold; color: #333; }
         .modal-content input, .modal-content select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         .list-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 6px 0; }
-        .list-item:last-child { border-bottom: none; }
-
         #analytics-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-top: 10px; }
         .org-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid var(--border-color); }
         .org-card-header { background: #343a40; color: white; padding: 12px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-        .org-card-body { padding: 0; }
         .analytics-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .analytics-table th { background: #f8f9fa; padding: 10px; border-bottom: 1px solid #dee2e6; text-align: right; color: #495057; font-weight: bold; }
-        .analytics-table th:first-child { text-align: left; }
         .analytics-table td { padding: 10px; border-bottom: 1px solid #f1f3f5; text-align: right; }
-        .analytics-table td:first-child { text-align: left; font-weight: bold; color: #333; }
-        .analytics-table tr:last-child td { border-bottom: none; }
-
-        /* 作業ログ用：白・水色のストライプ（ゼブラ）デザイン */
         .stripe-table tbody tr:nth-child(odd) td { background-color: #ffffff; }
         .stripe-table tbody tr:nth-child(even) td { background-color: #e6f7ff; }
-        
-        .btn-reset-log {
-            background-color: #f8f9fa; color: #f44336; border: 1px solid #f44336; font-size: 11px;
-            padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;
-        }
-        .btn-reset-log:hover { background-color: #f44336; color: white; }
-
-        /* 権限コントロール */
         body.role-viewer .edit-only { display: none !important; }
         body.role-viewer .admin-only { display: none !important; }
         body.role-viewer .hide-viewer { display: none !important; }
-        body.role-viewer .lock-viewer { pointer-events: none; opacity: 0.6; border: none; background: transparent !important; -webkit-appearance: none; appearance: none; }
+        body.role-viewer .lock-viewer { pointer-events: none; opacity: 0.6; border: none; background: transparent !important; appearance: none; }
         body.role-staff .admin-only { display: none !important; }
         body.role-admin .hide-admin { display: none !important; }
     </style>
 </head>
 <body class="role-viewer">
     
-    <!-- 各種モーダル -->
-    <div id="tab-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-top:0; color: #0d6efd;">✨ 新しいタブを作成</h3>
-            <label>📌 タブの名前</label><input type="text" id="new-tab-name" placeholder="消費">
-            <label>🔣 アイコン (絵文字1文字)</label><input type="text" id="new-tab-icon" placeholder="💡" maxlength="2">
-            <label>🔽 実行時の在庫の変動</label>
-            <select id="new-tab-operation">
-                <option value="sub">在庫を減らす (-)</option>
-                <option value="add">在庫を増やす (+)</option>
-                <option value="set">数値をそのまま上書き (=)</option>
-            </select>
-            <label>🎨 実行ボタンの色</label><select id="new-tab-color"><option value="orange">オレンジ色</option><option value="blue">青色</option><option value="green">緑色</option><option value="red">赤色</option></select>
-            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-secondary" onclick="closeModal('tab-modal')" style="width:auto;">キャンセル</button>
-                <button class="btn-add" onclick="saveNewTab()" style="width:auto;">作成する</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="auth-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-top:0; color: #ff9800;">🔑 管理者権限を取得</h3>
-            <label>ルームのマスターキー (4桁) を入力</label>
-            <input type="password" id="auth-masterkey" placeholder="****" maxlength="4">
-            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-secondary" onclick="closeModal('auth-modal')" style="width:auto;">キャンセル</button>
-                <button class="btn-add" style="background-color: #ff9800;" onclick="verifyMasterKey()">認証する</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="create-room-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-top:0; color: #4CAF50;">➕ 新しいルームを作る</h3>
-            <label>📌 ルームの名前 (例: メインサーバー)</label>
-            <input type="text" id="new-room-name" placeholder="ルーム名を入力">
-            <label style="margin-top:15px; color: #f8cb00;">🔑 マスターキー (4桁の数字)</label>
-            <input type="text" id="new-room-masterkey" placeholder="例: 1234" maxlength="4" pattern="\d{4}">
-            <p style="font-size: 11px; color: #666; margin-top: 5px;">※他の人に管理者権限を渡す際に使用するパスワードです。</p>
-            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-secondary" onclick="closeModal('create-room-modal')" style="width:auto;">キャンセル</button>
-                <button class="btn-add" style="background-color: #4CAF50;" onclick="createRoom()">作成する</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="join-room-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-top:0; color: #0d6efd;">🤝 既存のルームに参加</h3>
-            <label>🔑 招待されたルームID</label><input type="text" id="join-room-id" placeholder="例: A1B2C3" style="text-transform: uppercase;">
-            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-secondary" onclick="closeModal('join-room-modal')" style="width:auto;">キャンセル</button>
-                <button class="btn-add" onclick="joinRoom()" style="width:auto;">参加する</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="category-modal" class="modal-overlay">
-        <div class="modal-content" style="width: 350px;">
-            <h3 style="margin-top:0; color: #0d6efd;">🏷️ カテゴリの編集</h3>
-            <div id="category-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div>
-            <div style="display: flex; gap: 10px; align-items: flex-end;">
-                <div style="flex-grow: 1;"><input type="text" id="new-category-name" placeholder="新しいカテゴリ名" style="margin-top: 0;"></div>
-                <button class="btn-add" onclick="addCategory()" style="width: 70px; padding: 8px;">追加</button>
-            </div>
-            <div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('category-modal')" style="width:auto;">閉じる</button></div>
-        </div>
-    </div>
-
-    <div id="staff-modal" class="modal-overlay">
-        <div class="modal-content" style="width: 350px;">
-            <h3 style="margin-top:0; color: #f8cb00;">👤 担当スタッフの管理</h3>
-            <div id="staff-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div>
-            <div style="display: flex; gap: 10px; align-items: flex-end;">
-                <div style="flex-grow: 1;"><input type="text" id="new-staff-name" placeholder="スタッフ名" style="margin-top: 0;"></div>
-                <button class="btn-add" onclick="addStaff()" style="width: 70px; padding: 8px;">追加</button>
-            </div>
-            <div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('staff-modal')" style="width:auto;">閉じる</button></div>
-        </div>
-    </div>
-
-    <div id="org-modal" class="modal-overlay">
-        <div class="modal-content" style="width: 350px;">
-            <h3 style="margin-top:0; color: #17a2b8;">🏢 販売先組織の管理</h3>
-            <div id="org-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div>
-            <div style="display: flex; gap: 10px; align-items: flex-end;">
-                <div style="flex-grow: 1;"><input type="text" id="new-org-name" placeholder="組織名" style="margin-top: 0;"></div>
-                <button class="btn-add" onclick="addOrg()" style="width: 70px; padding: 8px;">追加</button>
-            </div>
-            <div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('org-modal')" style="width:auto;">閉じる</button></div>
-        </div>
-    </div>
-
-    <div id="report-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-top:0; color: #6f42c1;">📊 月次売上レポート作成</h3>
-            <label>📅 集計する月を選択</label><input type="month" id="report-month-input">
-            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn-secondary" onclick="closeModal('report-modal')" style="width:auto;">キャンセル</button>
-                <button class="btn-add" style="background-color: #6f42c1;" onclick="sendMonthlyReport()" style="width:auto;">集計して送信</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="members-modal" class="modal-overlay">
-        <div class="modal-content" style="width: 420px;">
-            <h3 style="margin-top:0; color: #fd7e14;">👥 メンバー権限管理</h3>
-            <p style="font-size: 12px; color: #666;">ルームに参加しているユーザーの権限を変更できます。</p>
-            <div id="members-list" style="margin-bottom: 15px; max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div>
-            <div style="margin-top:25px; display:flex; justify-content:flex-end;">
-                <button class="btn-secondary" onclick="closeModal('members-modal')" style="width:auto;">閉じる</button>
-            </div>
-        </div>
-    </div>
+    <!-- モーダル群 -->
+    <div id="tab-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #0d6efd;">✨ 新しいタブを作成</h3><label>📌 タブの名前</label><input type="text" id="new-tab-name" placeholder="消費"><label>🔣 アイコン</label><input type="text" id="new-tab-icon" placeholder="💡" maxlength="2"><label>🔽 実行時の在庫の変動</label><select id="new-tab-operation"><option value="sub">在庫を減らす (-)</option><option value="add">在庫を増やす (+)</option><option value="set">数値をそのまま上書き (=)</option></select><label>🎨 実行ボタンの色</label><select id="new-tab-color"><option value="orange">オレンジ色</option><option value="blue">青色</option><option value="green">緑色</option><option value="red">赤色</option></select><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('tab-modal')" style="width:auto;">キャンセル</button><button class="btn-add" onclick="saveNewTab()" style="width:auto;">作成する</button></div></div></div>
+    <div id="auth-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #ff9800;">🔑 管理者権限を取得</h3><label>ルームのマスターキー (4桁)</label><input type="password" id="auth-masterkey" placeholder="****" maxlength="4"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('auth-modal')" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #ff9800;" onclick="verifyMasterKey()">認証する</button></div></div></div>
+    <div id="create-room-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #4CAF50;">➕ 新しいルームを作る</h3><label>📌 ルームの名前</label><input type="text" id="new-room-name" placeholder="ルーム名を入力"><label style="margin-top:15px; color: #f8cb00;">🔑 マスターキー (4桁)</label><input type="text" id="new-room-masterkey" placeholder="例: 1234" maxlength="4"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('create-room-modal')" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #4CAF50;" onclick="createRoom()">作成する</button></div></div></div>
+    <div id="join-room-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #0d6efd;">🤝 既存のルームに参加</h3><label>🔑 招待されたルームID</label><input type="text" id="join-room-id" placeholder="例: A1B2C3"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('join-room-modal')" style="width:auto;">キャンセル</button><button class="btn-add" onclick="joinRoom()" style="width:auto;">参加する</button></div></div></div>
+    <div id="category-modal" class="modal-overlay"><div class="modal-content" style="width: 350px;"><h3 style="margin-top:0; color: #0d6efd;">🏷️ カテゴリの編集</h3><div id="category-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div><div style="display: flex; gap: 10px; align-items: flex-end;"><div style="flex-grow: 1;"><input type="text" id="new-category-name" placeholder="新しいカテゴリ名" style="margin-top: 0;"></div><button class="btn-add" onclick="addCategory()" style="width: 70px; padding: 8px;">追加</button></div><div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('category-modal')" style="width:auto;">閉じる</button></div></div></div>
+    <div id="staff-modal" class="modal-overlay"><div class="modal-content" style="width: 350px;"><h3 style="margin-top:0; color: #f8cb00;">👤 スタッフの管理</h3><div id="staff-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div><div style="display: flex; gap: 10px; align-items: flex-end;"><div style="flex-grow: 1;"><input type="text" id="new-staff-name" placeholder="スタッフ名" style="margin-top: 0;"></div><button class="btn-add" onclick="addStaff()" style="width: 70px; padding: 8px;">追加</button></div><div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('staff-modal')" style="width:auto;">閉じる</button></div></div></div>
+    <div id="org-modal" class="modal-overlay"><div class="modal-content" style="width: 350px;"><h3 style="margin-top:0; color: #17a2b8;">🏢 販売先組織の管理</h3><div id="org-edit-list" style="margin-bottom: 15px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div><div style="display: flex; gap: 10px; align-items: flex-end;"><div style="flex-grow: 1;"><input type="text" id="new-org-name" placeholder="組織名" style="margin-top: 0;"></div><button class="btn-add" onclick="addOrg()" style="width: 70px; padding: 8px;">追加</button></div><div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('org-modal')" style="width:auto;">閉じる</button></div></div></div>
+    <div id="report-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #6f42c1;">📊 月次売上レポート</h3><label>📅 集計する月を選択</label><input type="month" id="report-month-input"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('report-modal')" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #6f42c1;" onclick="sendMonthlyReport()" style="width:auto;">集計して送信</button></div></div></div>
+    <div id="members-modal" class="modal-overlay"><div class="modal-content" style="width: 420px;"><h3 style="margin-top:0; color: #fd7e14;">👥 メンバー権限管理</h3><div id="members-list" style="margin-bottom: 15px; max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div><div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('members-modal')" style="width:auto;">閉じる</button></div></div></div>
 
     <div class="sidebar">
-        <!-- プロフィールエリア -->
         <div class="user-profile">
             <label>👤 あなたの表示名</label>
             <input type="text" id="my-name-input" onchange="updateMyName()" placeholder="名前を入力">
@@ -256,8 +120,11 @@
         </div>
 
         <div style="display: flex; gap: 5px; padding: 15px 15px 0 15px; margin-bottom: 0;">
-            <button id="btn-mode-inv" class="btn-secondary" style="flex:1; background-color: #0d6efd; font-size:12px; padding:10px 5px;" onclick="switchView('inventory')">📦 在庫</button>
+            <button id="btn-mode-inv" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('inventory')">📦 在庫</button>
             <button id="btn-mode-reg" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('register')">🛒 レジ</button>
+            <button id="btn-mode-rsv" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('reservation')">📅 予約</button>
+        </div>
+        <div style="display: flex; gap: 5px; padding: 5px 15px 0 15px; margin-bottom: 0;">
             <button id="btn-mode-ana" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('analytics')">📊 集計</button>
             <button id="btn-mode-log" class="btn-secondary" style="flex:1; font-size:12px; padding:10px 5px;" onclick="switchView('log')">📋 履歴</button>
         </div>
@@ -271,7 +138,6 @@
             </div>
         </div>
 
-        <!-- メンバーリスト -->
         <div class="members-sidebar">
             <div style="font-size: 12px; font-weight: bold; color: #adb5bd; margin-bottom: 8px; display: flex; justify-content: space-between;">
                 <span>👥 メンバー (<span id="online-count">0</span>人 オンライン)</span>
@@ -295,13 +161,13 @@
         </div>
         
         <div class="settings admin-only">
-            <label id="server-settings-title" style="font-size: 14px; color: #fff;">⚙️ ルーム設定</label><br>
+            <label style="font-size: 14px; color: #fff;">⚙️ ルーム設定</label><br>
             <button class="btn-secondary" style="width:100%; background-color: #fd7e14; padding: 8px; margin-top: 10px; margin-bottom: 10px;" onclick="openMembersModal()">👥 メンバー・権限管理</button>
 
             <label style="margin-top: 5px; display:inline-block;">📝 ルーム表示名</label><input type="text" id="server-name-input" placeholder="サーバー名" onchange="renameServer()">
             <label style="margin-top: 10px; display:inline-block; color: #f8cb00;">🔑 ルームID (招待用)</label>
             <div style="display:flex; gap:5px; margin-bottom: 10px;">
-                <input type="text" id="room-id-display" readonly style="margin:0; background-color:#e9ecef; font-weight:bold; letter-spacing: 1px;">
+                <input type="text" id="room-id-display" readonly style="margin:0; background-color:#e9ecef; font-weight:bold;">
                 <button class="btn-secondary" onclick="copyRoomId()" style="margin:0; width:auto; background-color: #6c757d;">コピー</button>
             </div>
             
@@ -309,7 +175,7 @@
             <input type="text" id="settings-masterkey" placeholder="****" maxlength="4" onchange="saveMasterKey()">
 
             <label style="margin-top: 10px; display:inline-block;">🔗 Discord Webhook URL</label>
-            <input type="password" id="webhook-url" placeholder="https://discord.com/api/webhooks/..." onchange="saveWebhook()">
+            <input type="password" id="webhook-url" placeholder="https://..." onchange="saveWebhook()">
             <button class="btn-delete-server" onclick="deleteServer()">🗑️ このルームから退出(削除)</button>
             <div style="border-top: 1px dashed #495057; margin: 15px 0;"></div>
             <button class="btn-secondary" style="width:100%; background-color: #6f42c1; padding: 8px;" onclick="openModal('report-modal')">📊 月次売上レポートを作成</button>
@@ -342,10 +208,28 @@
             <button class="btn-secondary" style="width: auto; background-color: #6c757d; padding: 10px 15px;" onclick="setThisWeek()">直近1週間</button>
         </div>
 
-        <!-- ログ画面用のアクションヘッダー -->
         <div id="log-header-actions" class="header-actions" style="display: none; justify-content: space-between; align-items: center;">
             <h2 style="margin: 0; font-size: 18px; color: #333;">📋 作業ログ (履歴)</h2>
             <button class="btn-reset-log admin-only" onclick="resetLogs()">🗑️ ログをリセット</button>
+        </div>
+
+        <div id="rsv-header-actions" class="header-actions" style="display: none; justify-content: space-between; align-items: center; background-color: #e3f2fd; border: 1px solid #90caf9;">
+            <h2 style="margin: 0; font-size: 18px; color: #0d6efd;">📅 予約一覧</h2>
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <div style="display:flex; align-items:center; gap: 5px;">
+                    <label style="font-size:13px; font-weight:bold; color:#6c757d;">予約受付状態:</label>
+                    <select id="rsv-status-select" onchange="updateRsvSettings()" class="lock-viewer admin-only" style="padding:4px; border-radius:4px; font-weight:bold; border:1px solid #ced4da;">
+                        <option value="open">🟢 受付中</option>
+                        <option value="maintenance">🔴 メンテナンス中(停止)</option>
+                    </select>
+                </div>
+                <div style="width: 1px; height: 30px; background-color: #90caf9;"></div>
+                <div style="display:flex; align-items:center; gap: 5px;">
+                    <span style="font-size:13px; font-weight:bold; color:#495057;">受付用ID (5桁):</span>
+                    <input type="text" id="my-rsv-id" readonly style="font-size:16px; font-weight:bold; color:#0d6efd; padding:4px; text-align:center; width:60px; border:1px solid #ced4da; border-radius:4px; background:#fff;">
+                    <button class="btn-secondary admin-only" onclick="generateRsvId()" style="width: auto;">🔄 再生成</button>
+                </div>
+            </div>
         </div>
 
         <div id="normal-view-header">
@@ -353,7 +237,6 @@
                 <h1 id="mode-title" style="margin: 0;">📦 仕入モード</h1>
                 <button id="btn-delete-tab" class="btn-delete-tab admin-only" onclick="deleteCurrentTab()">🗑️ このタブを削除</button>
             </div>
-
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div class="category-tabs" id="category-tabs"></div>
                 <div style="display: flex; align-items: center; gap: 15px;">
@@ -364,33 +247,35 @@
             </div>
         </div>
 
-        <!-- 在庫・レジ用テーブル -->
         <table id="main-table">
             <thead id="table-head"></thead>
-            <tbody id="item-list"><tr><td colspan="11" style="text-align:center;">クラウドと接続中...</td></tr></tbody>
+            <tbody id="item-list"><tr><td colspan="13" style="text-align:center;">クラウドと接続中...</td></tr></tbody>
         </table>
 
-        <!-- 作業ログ用のテーブル -->
-        <table id="log-table" class="stripe-table" style="display: none;">
-            <thead id="log-table-head">
+        <table id="rsv-table" class="stripe-table" style="display: none;">
+            <thead>
                 <tr>
-                    <th style="width: 140px;">日時</th>
-                    <th style="width: 140px;">誰が (スタッフ)</th>
-                    <th style="width: 120px;">操作</th>
-                    <th>詳細 (何を何個)</th>
+                    <th style="width: 140px;">送信日時</th>
+                    <th style="width: 150px;">お名前</th>
+                    <th style="width: 120px;">FiveM番号</th>
+                    <th>ご用件・希望内容</th>
+                    <th style="width: 120px; text-align:center;">ステータス</th>
+                    <th style="width: 60px; text-align:center;" class="hide-viewer">操作</th>
                 </tr>
             </thead>
-            <tbody id="log-list">
-                <tr><td colspan="4" style="text-align:center;">読込中...</td></tr>
+            <tbody id="rsv-list">
+                <tr><td colspan="6" style="text-align:center;">読込中...</td></tr>
             </tbody>
         </table>
 
+        <table id="log-table" class="stripe-table" style="display: none;">
+            <thead id="log-table-head"><tr><th style="width: 140px;">日時</th><th style="width: 140px;">スタッフ</th><th style="width: 120px;">操作</th><th>詳細</th></tr></thead>
+            <tbody id="log-list"><tr><td colspan="4" style="text-align:center;">読込中...</td></tr></tbody>
+        </table>
         <div id="analytics-content" style="display: none;"></div>
-
     </div>
 
     <script>
-        // --- Firebase 設定 ---
         const firebaseConfig = {
             apiKey: "AIzaSyCrAhJ7lg8ERRaw02xEqopLQ1bR3xePFsU",
             authDomain: "fivem-231de.firebaseapp.com",
@@ -400,39 +285,31 @@
             messagingSenderId: "802767332922",
             appId: "1:802767332922:web:6e1be7810e354c9688f703"
         };
-
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         let dbRefInventory = null; let dbRefStaffs = null; let dbRefOrgs = null; let dbRefSettings = null; let dbRefMembers = null; let dbRefLogs = null;
+        let dbRefReservations = null; 
 
         let myUserId = localStorage.getItem('fivem_user_id');
-        if (!myUserId) {
-            myUserId = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now();
-            localStorage.setItem('fivem_user_id', myUserId);
-        }
+        if (!myUserId) { myUserId = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now(); localStorage.setItem('fivem_user_id', myUserId); }
         let myUserName = localStorage.getItem('fivem_user_name') || "名無しスタッフ";
-        let myRole = 'viewer'; 
-        let roomMembers = {};
-        let currentMasterKey = ""; 
+        let myRole = 'viewer'; let roomMembers = {}; let currentMasterKey = ""; 
 
         let isConnected = false;
-        database.ref('.info/connected').on('value', (snap) => {
-            isConnected = snap.val() === true;
-            updatePresence();
-        });
+        database.ref('.info/connected').on('value', (snap) => { isConnected = snap.val() === true; updatePresence(); });
 
-        // 割引データの定義
         const DISCOUNT_AMOUNTS = { 'none': 0, 'normal': 500, 'silver': 750, 'gold': 1000 };
         const DISCOUNT_LABELS = { 'none': '割引なし', 'normal': '通常(-500)', 'silver': '銀(-750)', 'gold': '金(-1k)' };
 
+        // ★割増(Premium) の定義
+        const PREMIUM_AMOUNTS = { 'none': 0, 'p1000': 1000, 'p2000': 2000, 'p3000': 3000, 'p4000': 4000, 'p5000': 5000 };
+        const PREMIUM_LABELS = { 'none': '割増なし', 'p1000': '+1k', 'p2000': '+2k', 'p3000': '+3k', 'p4000': '+4k', 'p5000': '+5k' };
+
         const DEFAULT_CATEGORIES = [];
-        let menuTabs = []; let currentMode = null; let inventory = [];
-        let categories = DEFAULT_CATEGORIES; 
-        let currentCategories = ["すべて"]; 
+        let menuTabs = []; let currentMode = null; let inventory = []; let categories = DEFAULT_CATEGORIES; let currentCategories = ["すべて"]; 
         let servers = []; let currentServerId = null; let staffs = []; let orgs = [];
-        let currentView = 'inventory'; 
-        let isEditing = false;
-        let actionLogs = []; 
+        let currentView = 'inventory'; let isEditing = false; let actionLogs = []; 
+        let currentReservationId = null; let currentRsvStatus = 'open'; let reservationsList = []; 
 
         document.addEventListener('focusin', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = true; });
         document.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = false; });
@@ -440,1331 +317,556 @@
         window.onload = function() {
             document.getElementById('my-name-input').value = myUserName;
             menuTabs = [
-                { id: 'tab_buy', icon: '📦', label: '仕入 (在庫を増やす)', title: '📦 仕入モード (在庫追加)', btnText: '仕入れる', actionText: '仕入(追加)', operation: 'add', btnClass: 'green' },
-                { id: 'tab_sell', icon: '💰', label: '売却 (在庫を減らす)', title: '💰 売却モード (在庫減少)', btnText: '売却する', actionText: '売却(減少)', operation: 'sub', btnClass: 'orange' },
-                { id: 'tab_loss', icon: '🗑️', label: '破棄・ロス (在庫減)', title: '🗑️ 破棄・ロスモード', btnText: '破棄する', actionText: '破棄(減少)', operation: 'sub', btnClass: 'red' },
-                { id: 'tab_set', icon: '📝', label: '棚卸し (直接上書き)', title: '📝 棚卸しモード (在庫上書き)', btnText: '上書き更新', actionText: '棚卸し(上書き)', operation: 'set', btnClass: 'blue' }
+                { id: 'tab_buy', icon: '📦', label: '仕入 (増やす)', title: '📦 仕入モード', btnText: '仕入れる', actionText: '仕入(追加)', operation: 'add', btnClass: 'green' },
+                { id: 'tab_sell', icon: '💰', label: '売却 (減らす)', title: '💰 売却モード', btnText: '売却する', actionText: '売却(減少)', operation: 'sub', btnClass: 'orange' },
+                { id: 'tab_loss', icon: '🗑️', label: 'ロス (破棄)', title: '🗑️ 破棄・ロスモード', btnText: '破棄する', actionText: '破棄(減少)', operation: 'sub', btnClass: 'red' },
+                { id: 'tab_set', icon: '📝', label: '棚卸し (上書き)', title: '📝 棚卸しモード', btnText: '上書き更新', actionText: '棚卸し(上書き)', operation: 'set', btnClass: 'blue' }
             ];
-            currentMode = menuTabs[0].id;
-            loadServers(); 
-            listenToFirebase(); 
-            switchView('inventory'); 
+            loadServers(); listenToFirebase(); switchView('inventory'); 
             const now = new Date(); document.getElementById('report-month-input').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         };
 
-        window.addEventListener('beforeunload', () => {
-            if (currentServerId && myUserId) {
-                database.ref(`rooms/${currentServerId}/members/${myUserId}`).update({ status: 'offline', lastActive: Date.now() });
-            }
-        });
+        window.addEventListener('beforeunload', () => { if (currentServerId && myUserId) database.ref(`rooms/${currentServerId}/members/${myUserId}`).update({ status: 'offline', lastActive: Date.now() }); });
 
         function updatePresence() {
-            if (!currentServerId || !myUserId) return;
-            const myMemberRef = database.ref(`rooms/${currentServerId}/members/${myUserId}`);
-            if (isConnected) {
-                myMemberRef.child('status').onDisconnect().set('offline');
-                myMemberRef.child('lastActive').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
-                myMemberRef.update({ status: 'online', lastActive: firebase.database.ServerValue.TIMESTAMP });
-            }
+            if (!currentServerId || !myUserId) return; const myMemberRef = database.ref(`rooms/${currentServerId}/members/${myUserId}`);
+            if (isConnected) { myMemberRef.child('status').onDisconnect().set('offline'); myMemberRef.child('lastActive').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP); myMemberRef.update({ status: 'online', lastActive: firebase.database.ServerValue.TIMESTAMP }); }
         }
-
-        async function setOfflineCurrentRoom() {
-            if (currentServerId && myUserId) {
-                const prevRef = database.ref(`rooms/${currentServerId}/members/${myUserId}`);
-                prevRef.child('status').onDisconnect().cancel();
-                prevRef.child('lastActive').onDisconnect().cancel();
-                await prevRef.update({ status: 'offline', lastActive: firebase.database.ServerValue.TIMESTAMP });
-            }
-        }
+        async function setOfflineCurrentRoom() { if (currentServerId && myUserId) { const prevRef = database.ref(`rooms/${currentServerId}/members/${myUserId}`); prevRef.child('status').onDisconnect().cancel(); prevRef.child('lastActive').onDisconnect().cancel(); await prevRef.update({ status: 'offline', lastActive: firebase.database.ServerValue.TIMESTAMP }); } }
 
         function renderSidebarMembers() {
-            const listDiv = document.getElementById('sidebar-members-list');
-            listDiv.innerHTML = '';
-            let onlineCount = 0;
-            
-            const sortedMembers = Object.entries(roomMembers).sort((a, b) => {
-                if (a[1].status === 'online' && b[1].status !== 'online') return -1;
-                if (a[1].status !== 'online' && b[1].status === 'online') return 1;
-                return 0;
-            });
-
+            const listDiv = document.getElementById('sidebar-members-list'); listDiv.innerHTML = ''; let onlineCount = 0;
+            const sortedMembers = Object.entries(roomMembers).sort((a, b) => { if (a[1].status === 'online' && b[1].status !== 'online') return -1; if (a[1].status !== 'online' && b[1].status === 'online') return 1; return 0; });
             sortedMembers.forEach(([uid, info]) => {
-                const isOnline = info.status === 'online';
-                if (isOnline) onlineCount++;
-                
-                const dotClass = isOnline ? 'online-dot' : 'offline-dot';
-                let roleIcon = '';
-                if (info.role === 'admin') roleIcon = '👑';
-                else if (info.role === 'staff') roleIcon = '✍️';
-                else roleIcon = '👀';
-
+                const isOnline = info.status === 'online'; if (isOnline) onlineCount++;
+                const dotClass = isOnline ? 'online-dot' : 'offline-dot'; let roleIcon = info.role === 'admin' ? '👑' : (info.role === 'staff' ? '✍️' : '👀');
                 const nameColor = uid === myUserId ? '#f8cb00' : '#fff';
-
-                const item = document.createElement('div');
-                item.className = 'member-list-item';
-                item.innerHTML = `
-                    <div style="display:flex; align-items:center;">
-                        <span class="${dotClass}"></span>
-                        <span style="color:${nameColor}; font-size:12px; font-weight:bold;">${info.name} ${uid === myUserId ? '(あなた)' : ''}</span>
-                    </div>
-                    <span style="font-size:10px; color:#adb5bd;">${roleIcon}</span>
-                `;
-                listDiv.appendChild(item);
-            });
-
-            document.getElementById('online-count').innerText = onlineCount;
+                listDiv.innerHTML += `<div class="member-list-item"><div style="display:flex; align-items:center;"><span class="${dotClass}"></span><span style="color:${nameColor}; font-size:12px; font-weight:bold;">${info.name} ${uid === myUserId ? '(あなた)' : ''}</span></div><span style="font-size:10px; color:#adb5bd;">${roleIcon}</span></div>`;
+            }); document.getElementById('online-count').innerText = onlineCount;
         }
 
         function applyPermissions() {
-            document.body.classList.remove('role-admin', 'role-staff', 'role-viewer');
-            document.body.classList.add(`role-${myRole}`);
-
+            document.body.className = `role-${myRole}`;
             const badge = document.getElementById('role-badge');
-            if (myRole === 'admin') { badge.innerHTML = '👑 権限: 管理者'; badge.style.background = '#f8cb00'; badge.style.color = '#fff'; }
-            else if (myRole === 'staff') { badge.innerHTML = '✍️ 権限: スタッフ'; badge.style.background = '#0d6efd'; badge.style.color = '#fff'; }
-            else { badge.innerHTML = '👀 権限: 閲覧のみ'; badge.style.background = '#6c757d'; badge.style.color = '#fff'; }
-
-            renderTable();
+            if (myRole === 'admin') { badge.innerHTML = '👑 管理者'; badge.style.background = '#f8cb00'; badge.style.color = '#fff'; }
+            else if (myRole === 'staff') { badge.innerHTML = '✍️ スタッフ'; badge.style.background = '#0d6efd'; badge.style.color = '#fff'; }
+            else { badge.innerHTML = '👀 閲覧のみ'; badge.style.background = '#6c757d'; badge.style.color = '#fff'; }
+            renderTable(); renderReservations();
         }
 
         async function updateMyName() {
-            const newName = document.getElementById('my-name-input').value.trim() || "名無し";
-            myUserName = newName;
-            localStorage.setItem('fivem_user_name', newName);
-            if (currentServerId && roomMembers[myUserId]) {
-                await database.ref('rooms/' + currentServerId + '/members/' + myUserId + '/name').set(newName);
-            }
+            const newName = document.getElementById('my-name-input').value.trim() || "名無し"; myUserName = newName; localStorage.setItem('fivem_user_name', newName);
+            if (currentServerId && roomMembers[myUserId]) await database.ref('rooms/' + currentServerId + '/members/' + myUserId + '/name').set(newName);
         }
 
         function switchView(view) {
             currentView = view;
-            const btnInv = document.getElementById('btn-mode-inv'); 
-            const btnReg = document.getElementById('btn-mode-reg');
-            const btnAna = document.getElementById('btn-mode-ana');
-            const btnLog = document.getElementById('btn-mode-log');
-            
-            const invControls = document.getElementById('inventory-controls'); 
-            const regControls = document.getElementById('register-controls');
-            
-            const headerActions = document.getElementById('inv-header-actions'); 
-            const anaHeaderActions = document.getElementById('ana-header-actions'); 
-            const logHeaderActions = document.getElementById('log-header-actions');
-            
+            const btnInv = document.getElementById('btn-mode-inv'); const btnReg = document.getElementById('btn-mode-reg');
+            const btnAna = document.getElementById('btn-mode-ana'); const btnLog = document.getElementById('btn-mode-log'); const btnRsv = document.getElementById('btn-mode-rsv');
+            const invControls = document.getElementById('inventory-controls'); const regControls = document.getElementById('register-controls');
+            const headerActions = document.getElementById('inv-header-actions'); const anaHeaderActions = document.getElementById('ana-header-actions'); 
+            const logHeaderActions = document.getElementById('log-header-actions'); const rsvHeaderActions = document.getElementById('rsv-header-actions'); 
             const normalHeader = document.getElementById('normal-view-header');
-            const mainTable = document.getElementById('main-table');
-            const logTable = document.getElementById('log-table');
+            const mainTable = document.getElementById('main-table'); const logTable = document.getElementById('log-table'); const rsvTable = document.getElementById('rsv-table'); 
             const analyticsContent = document.getElementById('analytics-content');
 
-            btnInv.style.backgroundColor = '#6c757d'; 
-            btnReg.style.backgroundColor = '#6c757d';
-            btnAna.style.backgroundColor = '#6c757d';
-            btnLog.style.backgroundColor = '#6c757d';
-
-            invControls.style.display = 'none'; 
-            regControls.style.display = 'none';
-            headerActions.style.display = 'none'; 
-            anaHeaderActions.style.display = 'none';
-            logHeaderActions.style.display = 'none';
-            normalHeader.style.display = 'none';
-            mainTable.style.display = 'none';
-            logTable.style.display = 'none';
-            analyticsContent.style.display = 'none';
+            [btnInv, btnReg, btnAna, btnLog, btnRsv].forEach(btn => btn.style.backgroundColor = '#6c757d');
+            [invControls, regControls, headerActions, anaHeaderActions, logHeaderActions, rsvHeaderActions, normalHeader, mainTable, logTable, rsvTable, analyticsContent].forEach(el => el.style.display = 'none');
 
             if (view === 'inventory') {
-                btnInv.style.backgroundColor = '#0d6efd'; 
-                invControls.style.display = 'block'; 
-                headerActions.style.display = 'flex'; 
-                normalHeader.style.display = 'block';
-                mainTable.style.display = 'table';
-                
-                document.getElementById('btn-delete-tab').style.display = 'inline-block';
-                const modeDef = menuTabs.find(m => m.id === currentMode);
-                document.getElementById('mode-title').innerText = modeDef ? modeDef.title : '📦 在庫管理';
-                document.getElementById('btn-bulk-action').style.display = 'inline-block'; 
-                document.getElementById('btn-checkout-action').style.display = 'none';
-                renderTable();
+                btnInv.style.backgroundColor = '#0d6efd'; invControls.style.display = 'block'; headerActions.style.display = 'flex'; normalHeader.style.display = 'block'; mainTable.style.display = 'table';
+                document.getElementById('btn-delete-tab').style.display = 'inline-block'; const modeDef = menuTabs.find(m => m.id === currentMode); document.getElementById('mode-title').innerText = modeDef ? modeDef.title : '📦 在庫管理';
+                document.getElementById('btn-bulk-action').style.display = 'inline-block'; document.getElementById('btn-checkout-action').style.display = 'none'; renderTable();
             } else if (view === 'register') {
-                btnReg.style.backgroundColor = '#fd7e14'; 
-                regControls.style.display = 'block';
-                normalHeader.style.display = 'block';
-                mainTable.style.display = 'table';
-                
-                document.getElementById('btn-delete-tab').style.display = 'none';
-                document.getElementById('mode-title').innerText = '🛒 会計(レジ)モード';
-                document.getElementById('btn-bulk-action').style.display = 'none'; 
-                document.getElementById('btn-checkout-action').style.display = 'inline-block';
-                renderTable();
+                btnReg.style.backgroundColor = '#fd7e14'; regControls.style.display = 'block'; normalHeader.style.display = 'block'; mainTable.style.display = 'table';
+                document.getElementById('btn-delete-tab').style.display = 'none'; document.getElementById('mode-title').innerText = '🛒 会計(レジ)モード'; document.getElementById('btn-bulk-action').style.display = 'none'; document.getElementById('btn-checkout-action').style.display = 'inline-block'; renderTable();
             } else if (view === 'analytics') {
-                btnAna.style.backgroundColor = '#6f42c1'; 
-                anaHeaderActions.style.display = 'flex';
-                analyticsContent.style.display = ''; 
-                
-                if (!document.getElementById('ana-start').value) {
-                    setThisWeek();
-                }
+                btnAna.style.backgroundColor = '#6f42c1'; anaHeaderActions.style.display = 'flex'; analyticsContent.style.display = ''; if (!document.getElementById('ana-start').value) setThisWeek();
             } else if (view === 'log') {
-                btnLog.style.backgroundColor = '#20c997';
-                logHeaderActions.style.display = 'flex';
-                logTable.style.display = 'table';
-                renderLogs();
+                btnLog.style.backgroundColor = '#20c997'; logHeaderActions.style.display = 'flex'; logTable.style.display = 'table'; renderLogs();
+            } else if (view === 'reservation') {
+                btnRsv.style.backgroundColor = '#0d6efd'; rsvHeaderActions.style.display = 'flex'; rsvTable.style.display = 'table'; renderReservations();
             }
         }
 
-        function renderLogs() {
-            const tbody = document.getElementById('log-list');
-            tbody.innerHTML = '';
-            if (actionLogs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">履歴がありません</td></tr>';
-                return;
+        async function generateRsvId() {
+            if (myRole !== 'admin') return alert("管理者のみ実行可能です");
+            const newId = Math.floor(10000 + Math.random() * 90000).toString(); 
+            if (confirm(`新しい予約ID「${newId}」を生成しますか？\n（※過去のID宛の予約は見えなくなります）`)) {
+                await database.ref('rooms/' + currentServerId + '/settings/reservationId').set(newId);
+                alert("新IDを生成しました！");
             }
-
-            actionLogs.forEach(log => {
-                const tr = document.createElement('tr');
-                const date = new Date(log.timestamp);
-                const dateStr = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
-                
-                let typeColor = "#e9ecef";
-                let textColor = "#333";
-                if (log.type.includes("レジ")) { typeColor = "#fff3cd"; textColor = "#856404"; }
-                if (log.type.includes("在庫")) { typeColor = "#d1e7dd"; textColor = "#0f5132"; }
-
-                tr.innerHTML = `
-                    <td style="font-size: 13px; color: #6c757d; font-weight: bold;">${dateStr}</td>
-                    <td style="font-weight: bold; color: #333;">${log.user}</td>
-                    <td><span style="background: ${typeColor}; color: ${textColor}; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${log.type}</span></td>
-                    <td style="font-size: 14px; font-weight: bold; color: #495057;">${log.detail}</td>
-                `;
-                tbody.appendChild(tr);
-            });
         }
 
-        async function saveLog(user, type, detail) {
-            if (!currentServerId || myRole === 'viewer') return;
+        async function syncPublicShopInfo() {
+            if (!currentReservationId || !currentServerId || myRole === 'viewer') return;
+            const itemList = inventory.filter(i => i.reservable !== false).map(item => item.name).filter(n => n);
+            const uniqueItems = [...new Set(itemList)];
+            const serverName = servers.find(s => s.id === currentServerId)?.name || "店舗";
             try {
-                await database.ref('rooms/' + currentServerId + '/logs').push({
-                    timestamp: firebase.database.ServerValue.TIMESTAMP,
-                    user: user,
-                    type: type,
-                    detail: detail
+                await database.ref('public_shop_info/' + currentReservationId).set({
+                    name: serverName, status: currentRsvStatus, items: uniqueItems
                 });
-            } catch(e) { console.error("ログ保存エラー", e); }
-        }
-
-        async function resetLogs() {
-            if (myRole !== 'admin') return alert("権限がありません。管理者のみ実行可能です。");
-            if (!confirm("本当にすべての作業ログを削除しますか？\n（この操作は元に戻せません）")) return;
-            
-            try {
-                await database.ref('rooms/' + currentServerId + '/logs').remove();
-                alert("作業ログをリセットしました。");
             } catch(e) { console.error(e); }
         }
 
+        async function updateRsvSettings() {
+            if (myRole !== 'admin') return;
+            const status = document.getElementById('rsv-status-select').value;
+            await database.ref('rooms/' + currentServerId + '/settings/reservationStatus').set(status);
+        }
+
+        function listenToReservations() {
+            if (dbRefReservations) dbRefReservations.off();
+            if (!currentReservationId) return;
+            dbRefReservations = database.ref('public_reservations/' + currentReservationId);
+            dbRefReservations.on('value', (snapshot) => {
+                const data = snapshot.val(); reservationsList = [];
+                if (data) { Object.keys(data).forEach(key => reservationsList.push({ id: key, ...data[key] })); reservationsList.sort((a, b) => b.createdAt - a.createdAt); }
+                if (currentView === 'reservation') renderReservations();
+            });
+        }
+
+        function renderReservations() {
+            if (currentView !== 'reservation') return;
+            const tbody = document.getElementById('rsv-list'); tbody.innerHTML = '';
+            if (reservationsList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">届いている予約はありません</td></tr>'; return; }
+            reservationsList.forEach(rsv => {
+                const tr = document.createElement('tr'); const d = new Date(rsv.createdAt); const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                let statusHtml = '';
+                if (rsv.status === 'new') statusHtml = `<select onchange="updateRsvStatus('${rsv.id}', this.value)" class="lock-viewer" style="background:#ffeeba; color:#856404; font-weight:bold; border:none; padding:4px; border-radius:4px;"><option value="new" selected>未対応</option><option value="doing">対応中</option><option value="done">完了</option></select>`;
+                else if (rsv.status === 'doing') statusHtml = `<select onchange="updateRsvStatus('${rsv.id}', this.value)" class="lock-viewer" style="background:#b8daff; color:#004085; font-weight:bold; border:none; padding:4px; border-radius:4px;"><option value="new">未対応</option><option value="doing" selected>対応中</option><option value="done">完了</option></select>`;
+                else if (rsv.status === 'done') statusHtml = `<select onchange="updateRsvStatus('${rsv.id}', this.value)" class="lock-viewer" style="background:#c3e6cb; color:#155724; font-weight:bold; border:none; padding:4px; border-radius:4px;"><option value="new">未対応</option><option value="doing">対応中</option><option value="done" selected>完了</option></select>`;
+                else statusHtml = `<select onchange="updateRsvStatus('${rsv.id}', this.value)" class="lock-viewer"><option value="new" selected>未対応</option><option value="doing">対応中</option><option value="done">完了</option></select>`;
+                
+                tr.innerHTML = `
+                    <td style="font-size:13px; color:#6c757d; font-weight:bold;">${dateStr}</td>
+                    <td style="font-weight:bold; color:#333;">${rsv.name}</td>
+                    <td style="font-weight:bold; color:#0d6efd;">${rsv.fivemNumber || '-'}</td>
+                    <td style="font-size:13px; white-space:pre-wrap;">${rsv.detail}</td>
+                    <td style="text-align:center;">${statusHtml}</td>
+                    <td style="text-align:center;" class="hide-viewer"><button class="btn-delete-tab edit-only" onclick="deleteRsv('${rsv.id}')">削除</button></td>
+                `; tbody.appendChild(tr);
+            });
+        }
+        async function updateRsvStatus(id, status) { if (myRole === 'viewer' || !currentReservationId) return; await database.ref('public_reservations/' + currentReservationId + '/' + id + '/status').set(status); }
+        async function deleteRsv(id) { if (myRole === 'viewer' || !currentReservationId) return; if (confirm("削除しますか？")) await database.ref('public_reservations/' + currentReservationId + '/' + id).remove(); }
+
+        function renderLogs() {
+            const tbody = document.getElementById('log-list'); tbody.innerHTML = '';
+            if (actionLogs.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">履歴がありません</td></tr>'; return; }
+            actionLogs.forEach(log => {
+                const tr = document.createElement('tr'); const d = new Date(log.timestamp); const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                let typeColor = "#e9ecef"; let textColor = "#333";
+                if (log.type.includes("レジ")) { typeColor = "#fff3cd"; textColor = "#856404"; }
+                if (log.type.includes("在庫")) { typeColor = "#d1e7dd"; textColor = "#0f5132"; }
+                tr.innerHTML = `<td style="font-size: 13px; color: #6c757d; font-weight: bold;">${dateStr}</td><td style="font-weight: bold; color: #333;">${log.user}</td><td><span style="background: ${typeColor}; color: ${textColor}; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">${log.type}</span></td><td style="font-size: 14px; font-weight: bold; color: #495057;">${log.detail}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        async function saveLog(user, type, detail) { if (!currentServerId || myRole === 'viewer') return; try { await database.ref('rooms/' + currentServerId + '/logs').push({ timestamp: firebase.database.ServerValue.TIMESTAMP, user: user, type: type, detail: detail }); } catch(e){} }
+        async function resetLogs() { if (myRole !== 'admin') return alert("管理者のみ"); if (confirm("ログを削除しますか？")) { await database.ref('rooms/' + currentServerId + '/logs').remove(); alert("リセットしました"); } }
+
         async function fetchAndRenderAnalytics() {
-            if (myRole === 'viewer') {
-                document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; color:#f44336; font-weight:bold;'>権限がありません。スタッフ以上のみ閲覧可能です。</div>";
-                return;
-            }
-            
-            const startDateStr = document.getElementById('ana-start').value;
-            const endDateStr = document.getElementById('ana-end').value;
-            if (!startDateStr || !endDateStr) return alert("期間を指定してください");
-            
-            const start = new Date(startDateStr); start.setHours(0,0,0,0);
-            const end = new Date(endDateStr); end.setHours(23,59,59,999);
-            
-            if (start > end) return alert("開始日が終了日より後になっています");
-
-            let months = [];
-            let d = new Date(start); d.setDate(1);
-            while(d <= end) {
-                months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-                d.setMonth(d.getMonth() + 1);
-            }
-            
-            document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; font-weight:bold; color:var(--info-color);'>⏳ クラウドからデータを取得・集計中...</div>";
-
+            if (myRole === 'viewer') { document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; color:#f44336; font-weight:bold;'>権限がありません。</div>"; return; }
+            const start = new Date(document.getElementById('ana-start').value); start.setHours(0,0,0,0); const end = new Date(document.getElementById('ana-end').value); end.setHours(23,59,59,999);
+            if (!start || !end || start > end) return alert("正しい期間を指定してください");
+            let months = []; let d = new Date(start); d.setDate(1); while(d <= end) { months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); d.setMonth(d.getMonth() + 1); }
+            document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; font-weight:bold; color:var(--info-color);'>⏳ 取得・集計中...</div>";
             let allSales = [];
-            try {
-                for (const ym of months) {
-                    const snap = await database.ref('rooms/' + currentServerId + '/sales/' + ym).once('value');
-                    const data = snap.val();
-                    if (data) Object.values(data).forEach(sale => allSales.push(sale));
-                }
-            } catch(e) {
-                document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; color:#f44336;'>データの取得に失敗しました</div>";
-                return;
-            }
-
+            for (const ym of months) { const snap = await database.ref('rooms/' + currentServerId + '/sales/' + ym).once('value'); const data = snap.val(); if (data) Object.values(data).forEach(s => allSales.push(s)); }
             const filtered = allSales.filter(s => s.timestamp >= start.getTime() && s.timestamp <= end.getTime());
-            
-            if (filtered.length === 0) {
-                document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; color:#6c757d; font-weight:bold;'>指定された期間内の売上データはありません。</div>";
-                return;
-            }
-
+            if (filtered.length === 0) { document.getElementById('analytics-content').innerHTML = "<div style='grid-column: 1 / -1; color:#6c757d; font-weight:bold;'>データはありません。</div>"; return; }
             let orgSummary = {};
             filtered.forEach(sale => {
-                const org = sale.organization || "指定なし (一般客など)";
-                if (!orgSummary[org]) orgSummary[org] = { items: {}, totalAmount: 0 };
-                
+                const org = sale.organization || "指定なし (一般客など)"; if (!orgSummary[org]) orgSummary[org] = { items: {}, totalAmount: 0 };
                 orgSummary[org].totalAmount += sale.totalAmount;
-                
-                if (sale.items) {
-                    sale.items.forEach(it => {
-                        if (!orgSummary[org].items[it.name]) {
-                            orgSummary[org].items[it.name] = { sell: 0, buy: 0, total: 0 };
-                        }
-                        if (it.trade === 'sell' || it.trade === 'empSell' || it.trade === 'stockOut') {
-                            orgSummary[org].items[it.name].sell += it.qty;
-                            orgSummary[org].items[it.name].total += it.total; 
-                        } else {
-                            orgSummary[org].items[it.name].buy += it.qty;
-                            orgSummary[org].items[it.name].total -= it.total; 
-                        }
-                    });
-                }
-            });
-
-            let html = '';
-            const sortedOrgs = Object.keys(orgSummary).sort((a,b) => a === "指定なし (一般客など)" ? 1 : b.localeCompare(a));
-            
-            sortedOrgs.forEach(org => {
-                const data = orgSummary[org];
-                html += `
-                    <div class="org-card">
-                        <div class="org-card-header">
-                            <span>🏢 ${org}</span>
-                            <span style="font-size: 13px; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; color: ${data.totalAmount >= 0 ? '#4CAF50' : '#f44336'};">
-                                期間内精算: ${data.totalAmount.toLocaleString()} 円
-                            </span>
-                        </div>
-                        <div class="org-card-body">
-                            <table class="analytics-table">
-                                <thead>
-                                    <tr>
-                                        <th>アイテム名</th>
-                                        <th>📤 販売</th>
-                                        <th>📥 買取</th>
-                                        <th>小計</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                `;
-                
-                Object.entries(data.items).sort((a,b) => a[0].localeCompare(b[0])).forEach(([itemName, itData]) => {
-                    html += `
-                        <tr>
-                            <td>${itemName}</td>
-                            <td style="color:#0d6efd; font-weight:bold;">${itData.sell > 0 ? itData.sell.toLocaleString() : '-'}</td>
-                            <td style="color:#f44336; font-weight:bold;">${itData.buy > 0 ? itData.buy.toLocaleString() : '-'}</td>
-                            <td>${itData.total.toLocaleString()} 円</td>
-                        </tr>
-                    `;
+                sale.items?.forEach(it => {
+                    if (!orgSummary[org].items[it.name]) orgSummary[org].items[it.name] = { sell: 0, buy: 0, total: 0 };
+                    if (it.trade === 'sell' || it.trade === 'empSell' || it.trade === 'stockOut') { orgSummary[org].items[it.name].sell += it.qty; orgSummary[org].items[it.name].total += it.total; }
+                    else { orgSummary[org].items[it.name].buy += it.qty; orgSummary[org].items[it.name].total -= it.total; }
                 });
-                
-                html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
             });
-            document.getElementById('analytics-content').innerHTML = html;
+            let html = ''; Object.keys(orgSummary).sort((a,b) => a === "指定なし (一般客など)" ? 1 : b.localeCompare(a)).forEach(org => {
+                const data = orgSummary[org];
+                html += `<div class="org-card"><div class="org-card-header"><span>🏢 ${org}</span><span style="font-size: 13px; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; color: ${data.totalAmount >= 0 ? '#4CAF50' : '#f44336'};">精算: ${data.totalAmount.toLocaleString()} 円</span></div><div class="org-card-body"><table class="analytics-table"><thead><tr><th>アイテム名</th><th>📤 販売</th><th>📥 買取</th><th>小計</th></tr></thead><tbody>`;
+                Object.entries(data.items).sort((a,b) => a[0].localeCompare(b[0])).forEach(([itemName, itData]) => {
+                    html += `<tr><td>${itemName}</td><td style="color:#0d6efd; font-weight:bold;">${itData.sell > 0 ? itData.sell.toLocaleString() : '-'}</td><td style="color:#f44336; font-weight:bold;">${itData.buy > 0 ? itData.buy.toLocaleString() : '-'}</td><td>${itData.total.toLocaleString()} 円</td></tr>`;
+                }); html += `</tbody></table></div></div>`;
+            }); document.getElementById('analytics-content').innerHTML = html;
         }
-
-        function setThisWeek() {
-            const end = new Date();
-            const start = new Date();
-            start.setDate(end.getDate() - 6); 
-            
-            const formatDate = (d) => {
-                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            };
-
-            document.getElementById('ana-end').value = formatDate(end);
-            document.getElementById('ana-start').value = formatDate(start);
-            fetchAndRenderAnalytics();
-        }
+        function setThisWeek() { const end = new Date(); const start = new Date(); start.setDate(end.getDate() - 6); const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; document.getElementById('ana-end').value = fmt(end); document.getElementById('ana-start').value = fmt(start); fetchAndRenderAnalytics(); }
 
         function listenToFirebase() {
             if (!currentServerId) return;
-            if (dbRefInventory) dbRefInventory.off();
-            if (dbRefStaffs) dbRefStaffs.off();
-            if (dbRefOrgs) dbRefOrgs.off(); 
-            if (dbRefSettings) dbRefSettings.off();
-            if (dbRefMembers) dbRefMembers.off();
-            if (dbRefLogs) dbRefLogs.off(); 
-            
+            if (dbRefInventory) dbRefInventory.off(); if (dbRefStaffs) dbRefStaffs.off(); if (dbRefOrgs) dbRefOrgs.off(); if (dbRefSettings) dbRefSettings.off(); if (dbRefMembers) dbRefMembers.off(); if (dbRefLogs) dbRefLogs.off();
             dbRefMembers = database.ref('rooms/' + currentServerId + '/members');
-            dbRefMembers.on('value', (snapshot) => {
-                roomMembers = snapshot.val() || {};
-                if (Object.keys(roomMembers).length > 0 && !roomMembers[myUserId]) {
-                    myRole = 'viewer';
-                    alert("ルームから退出させられました。");
-                    deleteServer(true);
-                    return;
-                }
-
-                if (roomMembers[myUserId]) myRole = roomMembers[myUserId].role;
-                else myRole = 'viewer'; 
-                
-                applyPermissions();
-                renderSidebarMembers();
-                if (document.getElementById('members-modal').style.display === 'flex') renderMembersEditList();
-            });
-
+            dbRefMembers.on('value', (snap) => { roomMembers = snap.val() || {}; if (Object.keys(roomMembers).length > 0 && !roomMembers[myUserId]) { myRole = 'viewer'; alert("退出させられました。"); deleteServer(true); return; } myRole = roomMembers[myUserId] ? roomMembers[myUserId].role : 'viewer'; applyPermissions(); renderSidebarMembers(); if (document.getElementById('members-modal').style.display === 'flex') renderMembersEditList(); });
+            
             dbRefInventory = database.ref('rooms/' + currentServerId + '/inventory');
-            dbRefInventory.on('value', (snapshot) => {
-                if (isEditing) return;
-                const data = snapshot.val();
+            dbRefInventory.on('value', (snap) => { 
+                if (isEditing) return; const data = snap.val(); 
                 if (data) { 
-                    inventory = data.map(item => {
-                        const existing = inventory.find(i => i.id === item.id) || {};
-                        let sPrice = item.sellPrice !== undefined ? item.sellPrice : (item.price || 0);
-                        let bPrice = item.buyPrice !== undefined ? item.buyPrice : (item.price || 0);
-                        let eSellPrice = item.empSellPrice !== undefined ? item.empSellPrice : (item.empPrice || 0);
-                        let eBuyPrice = item.empBuyPrice !== undefined ? item.empBuyPrice : 0;
-                        
+                    inventory = data.map(item => { 
+                        const existing = inventory.find(i => i.id === item.id) || {}; 
                         return { 
-                            ...item, 
-                            id: item.id || Date.now() + Math.random(), 
-                            category: item.category || "", 
-                            sellPrice: sPrice, 
-                            buyPrice: bPrice,
-                            empSellPrice: eSellPrice,
-                            empBuyPrice: eBuyPrice,
-                            inputQty: existing.inputQty || "",
-                            tradeType: existing.tradeType || "sell",
-                            discountRank: existing.discountRank || "none"
-                        };
-                    });
-                } 
-                else { inventory =[]; }
+                            ...item, id: item.id || Date.now()+Math.random(), category: item.category || "", 
+                            sellPrice: item.sellPrice ?? item.price ?? 0, buyPrice: item.buyPrice ?? item.price ?? 0, 
+                            empSellPrice: item.empSellPrice ?? item.empPrice ?? 0, empBuyPrice: item.empBuyPrice ?? 0, 
+                            reservable: item.reservable !== undefined ? item.reservable : true,
+                            inputQty: existing.inputQty || "", tradeType: existing.tradeType || "sell", 
+                            discountRank: existing.discountRank || "none",
+                            premiumRank: existing.premiumRank || "none"
+                        }; 
+                    }); 
+                } else { inventory = []; } 
                 renderTable(); 
-            });
-
-            dbRefStaffs = database.ref('rooms/' + currentServerId + '/staffs');
-            dbRefStaffs.on('value', (snapshot) => {
-                staffs = snapshot.val() ||[]; renderStaffList();
+                syncPublicShopInfo(); 
             });
             
-            dbRefOrgs = database.ref('rooms/' + currentServerId + '/orgs');
-            dbRefOrgs.on('value', (snapshot) => {
-                orgs = snapshot.val() ||[]; renderOrgList();
-            });
-
+            dbRefStaffs = database.ref('rooms/' + currentServerId + '/staffs'); dbRefStaffs.on('value', snap => { staffs = snap.val() || []; renderStaffList(); });
+            dbRefOrgs = database.ref('rooms/' + currentServerId + '/orgs'); dbRefOrgs.on('value', snap => { orgs = snap.val() || []; renderOrgList(); });
+            
             dbRefSettings = database.ref('rooms/' + currentServerId + '/settings');
-            dbRefSettings.on('value', (snapshot) => {
-                const data = snapshot.val();
+            dbRefSettings.on('value', (snap) => {
+                const data = snap.val();
                 if (data) {
-                    if (data.categories) categories = data.categories; else categories = [];
+                    categories = data.categories || []; currentMasterKey = data.masterKey || "";
+                    if (document.activeElement.id !== 'settings-masterkey') document.getElementById('settings-masterkey').value = currentMasterKey;
+                    if (data.menuTabs) { menuTabs = data.menuTabs; if (!menuTabs.find(m => m.id === currentMode)) currentMode = menuTabs[0].id; renderSidebarTabs(); }
                     
-                    if (data.masterKey !== undefined) {
-                        currentMasterKey = data.masterKey;
-                        if (document.activeElement.id !== 'settings-masterkey') {
-                            document.getElementById('settings-masterkey').value = data.masterKey;
-                        }
+                    if (data.reservationStatus) {
+                        currentRsvStatus = data.reservationStatus;
+                        if(document.getElementById('rsv-status-select')) document.getElementById('rsv-status-select').value = currentRsvStatus;
                     }
+                    if (data.reservationId) {
+                        if (currentReservationId !== data.reservationId) {
+                            currentReservationId = data.reservationId; document.getElementById('my-rsv-id').value = currentReservationId;
+                            listenToReservations(); 
+                        }
+                    } else {
+                        currentReservationId = null; document.getElementById('my-rsv-id').value = "未設定"; reservationsList = []; if (currentView === 'reservation') renderReservations();
+                    }
+                    syncPublicShopInfo(); 
 
-                    if (data.menuTabs) {
-                        menuTabs = data.menuTabs;
-                        if (!menuTabs.find(m => m.id === currentMode)) currentMode = menuTabs[0].id;
-                        renderSidebarTabs();
-                    }
-                    const currentServerIndex = servers.findIndex(s => s.id === currentServerId);
-                    if (currentServerIndex !== -1) {
-                        if (data.name && document.activeElement.id !== 'server-name-input') {
-                            servers[currentServerIndex].name = data.name;
-                            document.getElementById('server-name-input').value = data.name;
-                        }
-                        if (data.webhook !== undefined && document.activeElement.id !== 'webhook-url') {
-                            servers[currentServerIndex].webhook = data.webhook;
-                            document.getElementById('webhook-url').value = data.webhook;
-                        }
+                    const idx = servers.findIndex(s => s.id === currentServerId);
+                    if (idx !== -1) {
+                        if (data.name && document.activeElement.id !== 'server-name-input') { servers[idx].name = data.name; document.getElementById('server-name-input').value = data.name; }
+                        if (data.webhook !== undefined && document.activeElement.id !== 'webhook-url') { servers[idx].webhook = data.webhook; document.getElementById('webhook-url').value = data.webhook; }
                         saveServersLocal(); renderServerSelect();
                     }
                 }
-                
-                currentCategories = currentCategories.filter(c => c === 'すべて' || categories.includes(c));
-                if (currentCategories.length === 0) currentCategories = ['すべて'];
-                
-                renderCategoryTabs(); renderTable();
-                
-                if (document.getElementById('category-modal').style.display === 'flex') {
-                    renderCategoryEditList();
-                }
+                currentCategories = currentCategories.filter(c => c === 'すべて' || categories.includes(c)); if (currentCategories.length === 0) currentCategories = ['すべて'];
+                renderCategoryTabs(); renderTable(); if (document.getElementById('category-modal').style.display === 'flex') renderCategoryEditList();
             });
-
-            dbRefLogs = database.ref('rooms/' + currentServerId + '/logs');
-            dbRefLogs.limitToLast(100).on('value', (snapshot) => {
-                const data = snapshot.val();
-                actionLogs = [];
-                if (data) {
-                    Object.keys(data).forEach(key => {
-                        actionLogs.push({ id: key, ...data[key] });
-                    });
-                    actionLogs.sort((a, b) => b.timestamp - a.timestamp);
-                }
-                if (currentView === 'log') renderLogs();
-            });
+            dbRefLogs = database.ref('rooms/' + currentServerId + '/logs'); dbRefLogs.limitToLast(100).on('value', snap => { const data = snap.val(); actionLogs = []; if (data) Object.keys(data).forEach(key => actionLogs.push({ id: key, ...data[key] })); actionLogs.sort((a, b) => b.timestamp - a.timestamp); if (currentView === 'log') renderLogs(); });
         }
 
-        async function saveDataToFirebase() {
-            if (!currentServerId || myRole === 'viewer') return;
-            try { 
-                const cleanInventory = inventory.map(item => {
-                    const { inputQty, tradeType, discountRank, ...rest } = item;
-                    return rest;
-                });
-                await database.ref('rooms/' + currentServerId + '/inventory').set(cleanInventory); 
-            } catch (e) { console.error(e); }
-        }
-
-        function openModal(id) { 
-            if (id === 'auth-modal') document.getElementById('auth-masterkey').value = '';
-            document.getElementById(id).style.display = 'flex'; 
-        }
+        async function saveDataToFirebase() { if (!currentServerId || myRole === 'viewer') return; try { const clean = inventory.map(item => { const { inputQty, tradeType, discountRank, premiumRank, ...rest } = item; return rest; }); await database.ref('rooms/' + currentServerId + '/inventory').set(clean); } catch (e) { console.error(e); } }
+        function openModal(id) { if (id === 'auth-modal') document.getElementById('auth-masterkey').value = ''; document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        async function verifyMasterKey() {
-            if (!currentMasterKey) return alert("このルームにはマスターキーが設定されていません。管理者に設定を依頼してください。");
-            const inputKey = document.getElementById('auth-masterkey').value.trim();
-            if (inputKey === currentMasterKey) {
-                await database.ref('rooms/' + currentServerId + '/members/' + myUserId + '/role').set('admin');
-                alert("✅ 管理者権限を取得しました！");
-                closeModal('auth-modal');
-                document.getElementById('auth-masterkey').value = '';
-            } else {
-                alert("❌ マスターキーが違います！");
-            }
-        }
-        async function saveMasterKey() {
-            if (myRole !== 'admin') return;
-            const newKey = document.getElementById('settings-masterkey').value.trim();
-            if (!/^\d{4}$/.test(newKey)) return alert("マスターキーは4桁の数字にしてください。");
-            await database.ref('rooms/' + currentServerId + '/settings/masterKey').set(newKey);
-            alert("マスターキーを更新しました！");
-        }
-
-        function openMembersModal() { 
-            document.getElementById('members-modal').style.display = 'flex'; 
-            renderMembersEditList(); 
-        }
+        async function verifyMasterKey() { const inputKey = document.getElementById('auth-masterkey').value.trim(); if (inputKey === currentMasterKey) { await database.ref('rooms/' + currentServerId + '/members/' + myUserId + '/role').set('admin'); alert("✅ 管理者権限を取得しました！"); closeModal('auth-modal'); } else alert("❌ マスターキーが違います！"); }
+        async function saveMasterKey() { if (myRole !== 'admin') return; const newKey = document.getElementById('settings-masterkey').value.trim(); if (!/^\d{4}$/.test(newKey)) return alert("4桁の数字にしてください。"); await database.ref('rooms/' + currentServerId + '/settings/masterKey').set(newKey); alert("更新しました"); }
+        
+        function openMembersModal() { document.getElementById('members-modal').style.display = 'flex'; renderMembersEditList(); }
         function renderMembersEditList() {
             const listDiv = document.getElementById('members-list'); listDiv.innerHTML = '';
             for (const [uid, info] of Object.entries(roomMembers)) {
-                const item = document.createElement('div'); 
-                item.className = 'list-item';
-                
-                let roleSelect = '';
-                if (uid === myUserId) {
-                    roleSelect = `<span style="color:#f44336; font-size:12px; font-weight:bold;">あなた (${info.role})</span>`;
-                } else {
-                    roleSelect = `
-                        <select onchange="updateMemberRole('${uid}', this.value)" style="width:auto; padding:4px;">
-                            <option value="viewer" ${info.role === 'viewer' ? 'selected' : ''}>👀 閲覧のみ</option>
-                            <option value="staff" ${info.role === 'staff' ? 'selected' : ''}>✍️ スタッフ</option>
-                            <option value="admin" ${info.role === 'admin' ? 'selected' : ''}>👑 管理者</option>
-                        </select>
-                        <button class="btn-delete-tab" onclick="kickMember('${uid}', '${info.name}')" style="padding:2px 5px; margin-left: 5px;">追放</button>
-                    `;
-                }
-                item.innerHTML = `<div><strong style="color:#333;">${info.name}</strong></div><div style="display:flex; gap:5px; align-items:center;">${roleSelect}</div>`;
-                listDiv.appendChild(item);
+                let roleSelect = uid === myUserId ? `<span style="color:#f44336; font-size:12px; font-weight:bold;">あなた (${info.role})</span>` : `<select onchange="updateMemberRole('${uid}', this.value)" style="width:auto; padding:4px;"><option value="viewer" ${info.role === 'viewer' ? 'selected' : ''}>👀 閲覧のみ</option><option value="staff" ${info.role === 'staff' ? 'selected' : ''}>✍️ スタッフ</option><option value="admin" ${info.role === 'admin' ? 'selected' : ''}>👑 管理者</option></select><button class="btn-delete-tab" onclick="kickMember('${uid}', '${info.name}')" style="padding:2px 5px; margin-left: 5px;">追放</button>`;
+                listDiv.innerHTML += `<div class="list-item"><div><strong style="color:#333;">${info.name}</strong></div><div style="display:flex; gap:5px; align-items:center;">${roleSelect}</div></div>`;
             }
         }
-        async function updateMemberRole(uid, newRole) {
-            if (myRole !== 'admin') return alert("権限がありません！");
-            await database.ref('rooms/' + currentServerId + '/members/' + uid + '/role').set(newRole);
-        }
-        async function kickMember(uid, name) {
-            if (myRole !== 'admin') return alert("権限がありません！");
-            if (!confirm(`「${name}」をルームから追放しますか？`)) return;
-            await database.ref('rooms/' + currentServerId + '/members/' + uid).remove();
-        }
-
+        async function updateMemberRole(uid, newRole) { if (myRole === 'admin') await database.ref('rooms/' + currentServerId + '/members/' + uid + '/role').set(newRole); }
+        async function kickMember(uid, name) { if (myRole === 'admin' && confirm(`「${name}」を追放しますか？`)) await database.ref('rooms/' + currentServerId + '/members/' + uid).remove(); }
         async function createRoom() {
-            const name = document.getElementById('new-room-name').value.trim(); 
-            const mKey = document.getElementById('new-room-masterkey').value.trim();
-            if (!name) return alert("名前を入力してください！");
-            if (!mKey || !/^\d{4}$/.test(mKey)) return alert("マスターキーは4桁の数字で入力してください！");
-            
-            const newId = generateRoomId(); 
-            const initialSettings = {
-                name: name, webhook: "", masterKey: mKey, categories: DEFAULT_CATEGORIES,
-                menuTabs: [
-                    { id: 'tab_buy', icon: '📦', label: '仕入 (在庫を増やす)', title: '📦 仕入モード (在庫追加)', btnText: '仕入れる', actionText: '仕入(追加)', operation: 'add', btnClass: 'green' },
-                    { id: 'tab_sell', icon: '💰', label: '売却 (在庫を減らす)', title: '💰 売却モード (在庫減少)', btnText: '売却する', actionText: '売却(減少)', operation: 'sub', btnClass: 'orange' },
-                    { id: 'tab_loss', icon: '🗑️', label: '破棄・ロス (在庫減)', title: '🗑️ 破棄・ロスモード', btnText: '破棄する', actionText: '破棄(減少)', operation: 'sub', btnClass: 'red' },
-                    { id: 'tab_set', icon: '📝', label: '棚卸し (直接上書き)', title: '📝 棚卸しモード (在庫上書き)', btnText: '上書き更新', actionText: '棚卸し(上書き)', operation: 'set', btnClass: 'blue' }
-                ]
-            };
-            await database.ref('rooms/' + newId + '/settings').set(initialSettings);
-            await database.ref('rooms/' + newId + '/members/' + myUserId).set({ name: myUserName, role: 'admin', status: 'online', lastActive: Date.now() });
-
-            servers.push({ id: newId, name: name, webhook: "" }); 
-            await setOfflineCurrentRoom();
-            currentServerId = newId; saveServersLocal(); renderServerSelect(); 
-            document.getElementById('new-room-masterkey').value = '';
-            closeModal('create-room-modal'); changeServer(); 
+            const name = document.getElementById('new-room-name').value.trim(); const mKey = document.getElementById('new-room-masterkey').value.trim();
+            if (!name || !mKey || !/^\d{4}$/.test(mKey)) return alert("名前と4桁のマスターキーを入力してください！");
+            const newId = generateRoomId(); const rsvId = Math.floor(10000 + Math.random() * 90000).toString(); 
+            const initialSettings = { name: name, webhook: "", masterKey: mKey, categories: DEFAULT_CATEGORIES, reservationId: rsvId, reservationStatus: 'open', menuTabs: menuTabs };
+            await database.ref('rooms/' + newId + '/settings').set(initialSettings); await database.ref('rooms/' + newId + '/members/' + myUserId).set({ name: myUserName, role: 'admin', status: 'online', lastActive: Date.now() });
+            servers.push({ id: newId, name: name, webhook: "" }); await setOfflineCurrentRoom(); currentServerId = newId; saveServersLocal(); renderServerSelect(); closeModal('create-room-modal'); changeServer(); 
         }
-
         async function joinRoom() {
-            const id = document.getElementById('join-room-id').value.trim().toUpperCase(); 
-            if (!id) return alert("入力してください！"); 
-            if (servers.find(s => s.id === id)) return alert("既に追加されています！");
-            
-            const snapshot = await database.ref('rooms/' + id + '/settings/name').once('value');
-            const roomName = snapshot.val();
-            if (!roomName) return alert("ルームが見つかりません。IDを確認してください。");
-            
+            const id = document.getElementById('join-room-id').value.trim().toUpperCase(); if (!id) return alert("入力してください！"); if (servers.find(s => s.id === id)) return alert("既に参加済みです");
+            const roomName = (await database.ref('rooms/' + id + '/settings/name').once('value')).val(); if (!roomName) return alert("ルームが見つかりません");
             const memberSnap = await database.ref('rooms/' + id + '/members/' + myUserId).once('value');
-            if (!memberSnap.exists()) {
-                await database.ref('rooms/' + id + '/members/' + myUserId).set({ name: myUserName, role: 'viewer', status: 'online', lastActive: Date.now() });
-            } else {
-                await database.ref('rooms/' + id + '/members/' + myUserId).update({ status: 'online', lastActive: Date.now() });
-            }
-
-            servers.push({ id: id, name: roomName, webhook: "" }); 
-            await setOfflineCurrentRoom();
-            currentServerId = id; saveServersLocal(); renderServerSelect(); closeModal('join-room-modal'); changeServer(); 
+            if (!memberSnap.exists()) await database.ref('rooms/' + id + '/members/' + myUserId).set({ name: myUserName, role: 'viewer', status: 'online', lastActive: Date.now() });
+            else await database.ref('rooms/' + id + '/members/' + myUserId).update({ status: 'online', lastActive: Date.now() });
+            servers.push({ id: id, name: roomName, webhook: "" }); await setOfflineCurrentRoom(); currentServerId = id; saveServersLocal(); renderServerSelect(); closeModal('join-room-modal'); changeServer(); 
         }
 
-        function renderStaffList() {
-            const select = document.getElementById('staff-select'); const currentVal = select.value;
-            select.innerHTML = '<option value="">-- 担当者を選択 --</option>';
-            staffs.forEach(st => { const opt = document.createElement('option'); opt.value = st; opt.innerText = st; if (st === currentVal) opt.selected = true; select.appendChild(opt); });
-            if(document.getElementById('staff-modal').style.display === 'flex') renderStaffEditList();
-        }
-        function renderStaffEditList() {
-            const listDiv = document.getElementById('staff-edit-list'); listDiv.innerHTML = '';
-            staffs.forEach((st, index) => {
-                const item = document.createElement('div'); item.className = 'list-item';
-                item.innerHTML = `<span style="font-weight:bold; color:#333;">${st}</span> <button class="btn-delete-tab" style="padding: 2px 6px;" onclick="deleteStaff(${index})">🗑️</button>`;
-                listDiv.appendChild(item);
-            });
-        }
-        async function addStaff() {
-            if (myRole === 'viewer') return;
-            const input = document.getElementById('new-staff-name'); const name = input.value.trim();
-            if (!name) return alert("スタッフ名を入力してください！"); if (staffs.includes(name)) return alert("既に登録されています！");
-            staffs.push(name); await database.ref('rooms/' + currentServerId + '/staffs').set(staffs); input.value = '';
-        }
-        async function deleteStaff(index) {
-            if (myRole === 'viewer') return;
-            if (!confirm(`スタッフ「${staffs[index]}」を削除しますか？`)) return;
-            staffs.splice(index, 1); await database.ref('rooms/' + currentServerId + '/staffs').set(staffs);
-        }
-
-        function renderOrgList() {
-            const select = document.getElementById('org-select'); const currentVal = select.value;
-            select.innerHTML = '<option value="">-- 指定なし (一般客など) --</option>';
-            orgs.forEach(org => { const opt = document.createElement('option'); opt.value = org; opt.innerText = org; if (org === currentVal) opt.selected = true; select.appendChild(opt); });
-            if(document.getElementById('org-modal').style.display === 'flex') renderOrgEditList();
-        }
-        function renderOrgEditList() {
-            const listDiv = document.getElementById('org-edit-list'); listDiv.innerHTML = '';
-            orgs.forEach((org, index) => {
-                const item = document.createElement('div'); item.className = 'list-item';
-                item.innerHTML = `<span style="font-weight:bold; color:#333;">${org}</span> <button class="btn-delete-tab" style="padding: 2px 6px;" onclick="deleteOrg(${index})">🗑️</button>`;
-                listDiv.appendChild(item);
-            });
-        }
-        async function addOrg() {
-            if (myRole === 'viewer') return;
-            const input = document.getElementById('new-org-name'); const name = input.value.trim();
-            if (!name) return alert("組織名を入力してください！"); if (orgs.includes(name)) return alert("既に登録されています！");
-            orgs.push(name); await database.ref('rooms/' + currentServerId + '/orgs').set(orgs); input.value = '';
-        }
-        async function deleteOrg(index) {
-            if (myRole === 'viewer') return;
-            if (!confirm(`組織「${orgs[index]}」を削除しますか？`)) return;
-            orgs.splice(index, 1); await database.ref('rooms/' + currentServerId + '/orgs').set(orgs);
-        }
+        function renderStaffList() { const select = document.getElementById('staff-select'); const val = select.value; select.innerHTML = '<option value="">-- 担当者を選択 --</option>'; staffs.forEach(st => { const opt = document.createElement('option'); opt.value = st; opt.innerText = st; if (st === val) opt.selected = true; select.appendChild(opt); }); if(document.getElementById('staff-modal').style.display === 'flex') renderStaffEditList(); }
+        function renderStaffEditList() { const listDiv = document.getElementById('staff-edit-list'); listDiv.innerHTML = ''; staffs.forEach((st, i) => listDiv.innerHTML += `<div class="list-item"><span style="font-weight:bold; color:#333;">${st}</span> <button class="btn-delete-tab" onclick="deleteStaff(${i})">🗑️</button></div>`); }
+        async function addStaff() { const input = document.getElementById('new-staff-name'); const name = input.value.trim(); if (!name || staffs.includes(name)) return; staffs.push(name); await database.ref('rooms/' + currentServerId + '/staffs').set(staffs); input.value = ''; }
+        async function deleteStaff(index) { if (confirm(`削除しますか？`)) { staffs.splice(index, 1); await database.ref('rooms/' + currentServerId + '/staffs').set(staffs); } }
+        
+        function renderOrgList() { const select = document.getElementById('org-select'); const val = select.value; select.innerHTML = '<option value="">-- 指定なし (一般客) --</option>'; orgs.forEach(org => { const opt = document.createElement('option'); opt.value = org; opt.innerText = org; if (org === val) opt.selected = true; select.appendChild(opt); }); if(document.getElementById('org-modal').style.display === 'flex') renderOrgEditList(); }
+        function renderOrgEditList() { const listDiv = document.getElementById('org-edit-list'); listDiv.innerHTML = ''; orgs.forEach((org, i) => listDiv.innerHTML += `<div class="list-item"><span style="font-weight:bold; color:#333;">${org}</span> <button class="btn-delete-tab" onclick="deleteOrg(${i})">🗑️</button></div>`); }
+        async function addOrg() { const input = document.getElementById('new-org-name'); const name = input.value.trim(); if (!name || orgs.includes(name)) return; orgs.push(name); await database.ref('rooms/' + currentServerId + '/orgs').set(orgs); input.value = ''; }
+        async function deleteOrg(index) { if (confirm(`削除しますか？`)) { orgs.splice(index, 1); await database.ref('rooms/' + currentServerId + '/orgs').set(orgs); } }
 
         function toggleDiscount(index) {
-            if (myRole === 'viewer') return;
-            const ranks = ['none', 'normal', 'silver', 'gold'];
-            const current = inventory[index].discountRank || 'none';
-            const nextIdx = (ranks.indexOf(current) + 1) % ranks.length;
-            const nextRank = ranks[nextIdx];
-            
-            inventory[index].discountRank = nextRank;
-            
-            const btn = document.getElementById(`btn-discount-${index}`);
-            if (btn) {
-                btn.className = `btn-discount rank-${nextRank} lock-viewer`;
-                btn.innerText = DISCOUNT_LABELS[nextRank];
-            }
+            if (myRole === 'viewer') return; const ranks = ['none', 'normal', 'silver', 'gold']; const current = inventory[index].discountRank || 'none';
+            const nextRank = ranks[(ranks.indexOf(current) + 1) % ranks.length]; inventory[index].discountRank = nextRank;
+            const btn = document.getElementById(`btn-discount-${index}`); if (btn) { btn.className = `btn-discount rank-${nextRank} lock-viewer`; btn.innerText = DISCOUNT_LABELS[nextRank]; }
+            calcTotal(index);
+        }
+
+        function togglePremium(index) {
+            if (myRole === 'viewer') return; const ranks = ['none', 'p1000', 'p2000', 'p3000', 'p4000', 'p5000']; const current = inventory[index].premiumRank || 'none';
+            const nextRank = ranks[(ranks.indexOf(current) + 1) % ranks.length]; inventory[index].premiumRank = nextRank;
+            const btn = document.getElementById(`btn-premium-${index}`); if (btn) { btn.className = `btn-premium rank-${nextRank} lock-viewer`; btn.innerText = PREMIUM_LABELS[nextRank]; }
             calcTotal(index);
         }
 
         async function executeCheckout() {
-            if (myRole === 'viewer') return alert("権限がありません！");
-            const staffName = document.getElementById('staff-select').value;
-            const orgName = document.getElementById('org-select').value; 
+            if (myRole === 'viewer') return; const staffName = document.getElementById('staff-select').value; const orgName = document.getElementById('org-select').value; 
+            if (!staffName) return alert("「担当スタッフ」を選択してください！");
+            let targets = []; inventory.forEach((item, index) => { const qty = Number(String(item.inputQty || '').replace(/,/g, '')); if (!isNaN(qty) && qty > 0) targets.push({ item, index, qty, trade: item.tradeType || 'sell' }); });
+            if (targets.length === 0) return alert("個数を入力してください！");
+            if (!confirm(`担当: ${staffName}\n会計しますか？`)) return;
             
-            if (!staffName) return alert("左側のメニューで「担当スタッフ」を選択してください！");
-            
-            let targets =[];
-            inventory.forEach((item, index) => {
-                const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
-                if (!isNaN(qty) && qty > 0) {
-                    targets.push({ item: item, index: index, qty: qty, trade: item.tradeType || 'sell' }); 
-                }
-            });
-            if (targets.length === 0) return alert("会計する商品の個数を入力してください！");
-
-            let confirmMsg = `担当: ${staffName}\n`;
-            if (orgName) confirmMsg += `販売先: ${orgName}\n`;
-            confirmMsg += `会計（精算）しますか？`;
-            if (!confirm(confirmMsg)) return;
-            
-            let reportLines =[]; let totalAllAmount = 0; let totalSellQty = 0; let totalBuyQty = 0; const soldItems =[];
-            
+            let reportLines = []; let totalAllAmount = 0; let totalSellQty = 0; let totalBuyQty = 0; const soldItems = [];
             targets.forEach(t => {
-                let unitPrice = 0;
-                let typeLabel = "";
-                let discountText = "";
+                let unitPrice = 0, typeLabel = "", addText = "";
+                let premiumAmount = 0;
                 
-                if (t.trade === 'sell') {
-                    unitPrice = t.item.sellPrice || 0;
-                    typeLabel = "📤販売";
-                    if (t.item.discountRank && t.item.discountRank !== 'none') {
-                        const dAmount = DISCOUNT_AMOUNTS[t.item.discountRank];
-                        unitPrice = Math.max(0, unitPrice - dAmount);
-                        discountText = `(割引: ${DISCOUNT_LABELS[t.item.discountRank]})`;
-                    }
-                } else if (t.trade === 'buy') {
-                    unitPrice = t.item.buyPrice || 0;
-                    typeLabel = "📥買取";
-                } else if (t.trade === 'empSell') {
-                    unitPrice = t.item.empSellPrice || 0;
-                    typeLabel = "👔従業員販";
-                } else if (t.trade === 'empBuy') {
-                    unitPrice = t.item.empBuyPrice || 0;
-                    typeLabel = "👔従業員買";
-                } else if (t.trade === 'stockOut') {
-                    unitPrice = 0;
-                    typeLabel = "📦在庫出";
-                } else if (t.trade === 'stockIn') {
-                    unitPrice = 0;
-                    typeLabel = "📦在庫入";
+                if (t.trade === 'sell') { 
+                    unitPrice = Math.max(0, (t.item.sellPrice || 0) - DISCOUNT_AMOUNTS[t.item.discountRank || 'none']); 
+                    premiumAmount = PREMIUM_AMOUNTS[t.item.premiumRank || 'none'];
+                    typeLabel = "📤販売"; 
+                    if (t.item.discountRank && t.item.discountRank !== 'none') addText += `(割: ${DISCOUNT_LABELS[t.item.discountRank]})`;
+                    if (t.item.premiumRank && t.item.premiumRank !== 'none') addText += (addText ? ' ' : '') + `(増: ${PREMIUM_LABELS[t.item.premiumRank]})`;
                 }
-
-                const totalAmount = unitPrice * t.qty; 
+                else if (t.trade === 'buy') { 
+                    unitPrice = (t.item.buyPrice || 0); 
+                    premiumAmount = PREMIUM_AMOUNTS[t.item.premiumRank || 'none'];
+                    typeLabel = "📥買取"; 
+                    if (t.item.premiumRank && t.item.premiumRank !== 'none') addText += `(増: ${PREMIUM_LABELS[t.item.premiumRank]})`;
+                }
+                else if (t.trade === 'empSell') { unitPrice = t.item.empSellPrice || 0; typeLabel = "👔従業員販"; }
+                else if (t.trade === 'empBuy') { unitPrice = t.item.empBuyPrice || 0; typeLabel = "👔従業員買"; }
+                else if (t.trade === 'stockOut') { unitPrice = 0; typeLabel = "📦在庫出"; }
+                else if (t.trade === 'stockIn') { unitPrice = 0; typeLabel = "📦在庫入"; }
+                
+                // ★ 単価×個数の結果に、割増額（全体へのプラス）を足す
+                const totalAmount = (unitPrice * t.qty) + premiumAmount; 
                 
                 if (t.trade === 'sell' || t.trade === 'empSell' || t.trade === 'stockOut') {
-                    totalAllAmount += totalAmount; 
-                    totalSellQty += (t.trade === 'stockOut') ? 0 : t.qty;
-                    t.item.stock -= t.qty; 
-                    soldItems.push({ name: t.item.name, trade: t.trade, price: unitPrice, qty: t.qty, total: totalAmount });
-                    reportLines.push(`・[${typeLabel}] ${t.item.name} ${discountText} x ${t.qty.toLocaleString()}個 (+${totalAmount.toLocaleString()}円)`);
+                    totalAllAmount += totalAmount; totalSellQty += (t.trade === 'stockOut') ? 0 : t.qty; t.item.stock -= t.qty; 
+                    soldItems.push({ name: t.item.name, trade: t.trade, price: unitPrice, premium: premiumAmount, qty: t.qty, total: totalAmount });
+                    reportLines.push(`・[${typeLabel}] ${t.item.name} ${addText} x ${t.qty}個 (+${totalAmount.toLocaleString()}円)`);
                 } else {
-                    totalAllAmount -= totalAmount; 
-                    totalBuyQty += (t.trade === 'stockIn') ? 0 : t.qty;
-                    t.item.stock += t.qty; 
-                    soldItems.push({ name: t.item.name, trade: t.trade, price: unitPrice, qty: t.qty, total: totalAmount });
-                    reportLines.push(`・[${typeLabel}] ${t.item.name} x ${t.qty.toLocaleString()}個 (-${totalAmount.toLocaleString()}円)`);
+                    totalAllAmount -= totalAmount; totalBuyQty += (t.trade === 'stockIn') ? 0 : t.qty; t.item.stock += t.qty; 
+                    soldItems.push({ name: t.item.name, trade: t.trade, price: unitPrice, premium: premiumAmount, qty: t.qty, total: totalAmount });
+                    reportLines.push(`・[${typeLabel}] ${t.item.name} ${addText} x ${t.qty}個 (-${totalAmount.toLocaleString()}円)`);
                 }
             });
             
-            const now = new Date(); const yearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            const saleData = { timestamp: now.getTime(), staff: staffName, organization: orgName, items: soldItems, totalAmount: totalAllAmount, totalSellQty: totalSellQty, totalBuyQty: totalBuyQty };
-
+            const now = new Date(); const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
             try {
-                await database.ref('rooms/' + currentServerId + '/sales/' + yearMonth).push(saleData);
-                await saveDataToFirebase();
-                
-                let logDetails = targets.map(t => {
-                    let tLabel = "販売";
-                    if (t.trade === 'buy') tLabel = "買取";
-                    else if (t.trade === 'empSell') tLabel = "従業員販";
-                    else if (t.trade === 'empBuy') tLabel = "従業員買";
-                    else if (t.trade === 'stockOut') tLabel = "在庫のみ(減)";
-                    else if (t.trade === 'stockIn') tLabel = "在庫のみ(増)";
-                    return `${t.item.name} (${tLabel}): ${t.qty}個`;
-                }).join(" / ");
-                if (orgName) logDetails += ` [販売先: ${orgName}]`;
-                await saveLog(staffName, "🛒 レジ精算", logDetails);
-
+                await database.ref('rooms/' + currentServerId + '/sales/' + ym).push({ timestamp: now.getTime(), staff: staffName, organization: orgName, items: soldItems, totalAmount: totalAllAmount, totalSellQty: totalSellQty, totalBuyQty: totalBuyQty });
+                await saveDataToFirebase(); await saveLog(staffName, "🛒 レジ精算", targets.map(t => `${t.item.name}: ${t.qty}個`).join(" / "));
                 const webhookUrl = document.getElementById('webhook-url').value; const serverName = servers.find(s => s.id === currentServerId).name;
-                if (webhookUrl) {
-                    let titleStr = `🛒[${serverName}] 会計・精算完了`;
-                    if (orgName) titleStr += ` (販売先: ${orgName})`;
-
-                    let fields = [
-                        { name: "担当スタッフ", value: staffName, inline: true }, 
-                        { name: "販売 / 買取数", value: `売: ${totalSellQty.toLocaleString()} / 買: ${totalBuyQty.toLocaleString()}`, inline: true }
-                    ];
-                    if (orgName) {
-                        fields.push({ name: "🏢 販売先組織", value: orgName, inline: true });
-                    }
-
-                    const message = { 
-                        embeds:[{ 
-                            title: titleStr, 
-                            color: totalAllAmount >= 0 ? 3066993 : 15158332, 
-                            description: reportLines.join('\n') + `\n\n**最終精算金額:** ${totalAllAmount.toLocaleString()}円`, 
-                            fields: fields, 
-                            timestamp: new Date().toISOString() 
-                        }] 
-                    };
-                    fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
-                }
-                alert("✅ 会計完了！"); 
-                
-                inventory.forEach(item => {
-                    item.inputQty = "";
-                    item.tradeType = "sell";
-                    item.discountRank = "none";
-                });
-                renderTable(); 
+                if (webhookUrl) fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embeds:[{ title: `🛒[${serverName}] 会計完了`, color: totalAllAmount >= 0 ? 3066993 : 15158332, description: reportLines.join('\n') + `\n\n**最終精算:** ${totalAllAmount.toLocaleString()}円`, fields: [{ name: "スタッフ", value: staffName, inline: true }, { name: "売/買", value: `${totalSellQty} / ${totalBuyQty}`, inline: true }], timestamp: new Date().toISOString() }] }) });
+                alert("✅ 会計完了！"); inventory.forEach(item => { item.inputQty = ""; item.tradeType = "sell"; item.discountRank = "none"; item.premiumRank = "none"; }); renderTable(); 
             } catch (e) { alert("エラーが発生しました。"); }
         }
 
         async function sendMonthlyReport() {
-            if (myRole !== 'admin') return alert("管理者のみレポートを出力できます。");
-            const monthVal = document.getElementById('report-month-input').value; 
-            if (!monthVal) return alert("月を選択してください！");
-            const webhookUrl = document.getElementById('webhook-url').value;
-            if (!webhookUrl) return alert("Webhook URLが設定されていません！");
-            const serverName = servers.find(s => s.id === currentServerId).name;
-            try {
-                const snapshot = await database.ref('rooms/' + currentServerId + '/sales/' + monthVal).once('value');
-                const salesData = snapshot.val();
-                if (!salesData) return alert(`売上データはありません。`);
-
-                let grandTotalAmount = 0; let grandTotalSellQty = 0; let grandTotalBuyQty = 0; const staffSummary = {};
-                
-                Object.values(salesData).forEach(sale => {
-                    grandTotalAmount += sale.totalAmount; 
-                    grandTotalSellQty += (sale.totalSellQty || 0);
-                    grandTotalBuyQty += (sale.totalBuyQty || 0);
-
-                    if (!staffSummary[sale.staff]) staffSummary[sale.staff] = { amount: 0, sellQty: 0, buyQty: 0, items: {} };
-                    staffSummary[sale.staff].amount += sale.totalAmount;
-                    staffSummary[sale.staff].sellQty += (sale.totalSellQty || 0);
-                    staffSummary[sale.staff].buyQty += (sale.totalBuyQty || 0);
-                    
-                    sale.items.forEach(it => {
-                        let typeStr = "[販売]";
-                        if (it.trade === 'buy') typeStr = "[買取]";
-                        else if (it.trade === 'empSell') typeStr = "[従業員販]";
-                        else if (it.trade === 'empBuy') typeStr = "[従業員買]";
-                        else if (it.trade === 'stockOut' || it.trade === 'stockIn') typeStr = "[在庫のみ]";
-                        
-                        const key = `${typeStr} ${it.name}`;
-                        staffSummary[sale.staff].items[key] = (staffSummary[sale.staff].items[key] || 0) + it.qty;
-                    });
-                });
-
-                let desc = `📊 **売上・買取 統計レポート**\n──────────────────\n`;
-                for (const [staff, info] of Object.entries(staffSummary)) {
-                    desc += `👤 **${staff}**\n`;
-                    for (const [name, q] of Object.entries(info.items)) { desc += ` ・${name}: ${q}個\n`; }
-                    desc += ` 💰 **小計: ${info.amount.toLocaleString()}円** (売:${info.sellQty} / 買:${info.buyQty})\n──────────────────\n`;
-                }
-                desc += `🏆 **最終利益: ${grandTotalAmount.toLocaleString()}円**\n📦 **総数 (売/買): ${grandTotalSellQty} / ${grandTotalBuyQty}**`;
-
-                const message = { embeds:[{ title: `📊 [${serverName}] ${monthVal} 月次売上レポート`, color: 7284152, description: desc, timestamp: new Date().toISOString() }] };
-                await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
-                alert("集計レポートを送信しました！"); closeModal('report-modal');
-            } catch (e) { alert("エラーが発生しました。"); }
+            if (myRole !== 'admin') return; const monthVal = document.getElementById('report-month-input').value; const webhookUrl = document.getElementById('webhook-url').value;
+            if (!monthVal || !webhookUrl) return alert("月とWebhookを設定してください！");
+            const salesData = (await database.ref('rooms/' + currentServerId + '/sales/' + monthVal).once('value')).val(); if (!salesData) return alert(`売上データなし`);
+            let grandAmount = 0, grandSell = 0, grandBuy = 0, staffSummary = {};
+            Object.values(salesData).forEach(sale => {
+                grandAmount += sale.totalAmount; grandSell += (sale.totalSellQty || 0); grandBuy += (sale.totalBuyQty || 0);
+                if (!staffSummary[sale.staff]) staffSummary[sale.staff] = { amount: 0, items: {} };
+                staffSummary[sale.staff].amount += sale.totalAmount;
+                sale.items.forEach(it => staffSummary[sale.staff].items[it.name] = (staffSummary[sale.staff].items[it.name] || 0) + it.qty);
+            });
+            let desc = `📊 **売上統計**\n`; for (const [staff, info] of Object.entries(staffSummary)) desc += `👤 **${staff}**: ${info.amount.toLocaleString()}円\n`;
+            desc += `\n🏆 **最終利益: ${grandAmount.toLocaleString()}円**`;
+            await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embeds:[{ title: `📊 ${monthVal} 月次レポート`, color: 7284152, description: desc, timestamp: new Date().toISOString() }] }) });
+            alert("送信しました！"); closeModal('report-modal');
         }
 
         function updateBulkTotal() {
-            if (currentView === 'analytics') return;
-            
-            let totalAllAmount = 0; let hasInput = false;
-            inventory.forEach((item, index) => {
+            if (currentView === 'analytics' || currentView === 'log' || currentView === 'reservation') return; 
+            let total = 0, hasInput = false;
+            inventory.forEach(item => {
                 const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
                 if (!isNaN(qty) && qty > 0) { 
                     if (currentView === 'register') {
-                        const tradeType = item.tradeType || 'sell';
-                        let price = 0;
-                        if (tradeType === 'sell') price = (item.sellPrice || 0);
-                        else if (tradeType === 'buy') price = (item.buyPrice || 0);
-                        else if (tradeType === 'empSell') price = (item.empSellPrice || 0);
-                        else if (tradeType === 'empBuy') price = (item.empBuyPrice || 0);
-                        else if (tradeType === 'stockOut' || tradeType === 'stockIn') price = 0;
+                        let price = item.tradeType === 'buy' ? item.buyPrice : (item.tradeType === 'empSell' ? item.empSellPrice : (item.tradeType === 'empBuy' ? item.empBuyPrice : item.sellPrice));
                         
-                        if (tradeType === 'sell') {
-                            const dAmount = DISCOUNT_AMOUNTS[item.discountRank || 'none'];
-                            price = Math.max(0, price - dAmount);
+                        if ((item.tradeType || 'sell') === 'sell') {
+                            price = Math.max(0, (price || 0) - DISCOUNT_AMOUNTS[item.discountRank || 'none']);
                         }
                         
-                        if (tradeType === 'buy' || tradeType === 'empBuy' || tradeType === 'stockIn') totalAllAmount -= (price * qty);
-                        else totalAllAmount += (price * qty);
-                    } else {
-                        totalAllAmount += ((item.sellPrice || 0) * qty); 
-                    }
+                        // ★ 全体の小計金額を計算してから割増を足す
+                        let rowTotal = (price || 0) * qty;
+                        if (item.tradeType === 'sell' || item.tradeType === 'buy' || !item.tradeType) {
+                            rowTotal += PREMIUM_AMOUNTS[item.premiumRank || 'none'];
+                        }
+                        
+                        if (['buy', 'empBuy', 'stockIn'].includes(item.tradeType)) total -= rowTotal; else total += rowTotal;
+                    } else total += ((item.sellPrice || 0) * qty); 
                     hasInput = true; 
                 } 
             });
-            const displayElement = document.getElementById('bulk-total-display');
-            if (hasInput) { 
-                displayElement.style.display = 'block'; 
-                displayElement.innerText = currentView === 'register' ? `精算合計: ${totalAllAmount.toLocaleString()}円` : `合計: ${totalAllAmount.toLocaleString()}円`; 
-                displayElement.style.color = totalAllAmount < 0 ? '#f44336' : 'var(--info-color)';
-            } else { 
-                displayElement.style.display = 'none'; 
-            }
+            const disp = document.getElementById('bulk-total-display');
+            if (hasInput) { disp.style.display = 'block'; disp.innerText = currentView === 'register' ? `精算合計: ${total.toLocaleString()}円` : `合計: ${total.toLocaleString()}円`; disp.style.color = total < 0 ? '#f44336' : 'var(--info-color)'; } else disp.style.display = 'none';
         }
 
         function renderTable() {
-            if (currentView === 'analytics' || currentView === 'log') return; 
-
+            if (currentView === 'analytics' || currentView === 'log' || currentView === 'reservation') return; 
             const thead = document.getElementById('table-head'); const tbody = document.getElementById('item-list');
-            const isViewer = myRole === 'viewer';
             
-            if (currentView === 'inventory') { 
-                thead.innerHTML = `<tr>
-                    <th class="hide-viewer" style="width: 30px; text-align: center;">順序</th>
-                    <th>カテゴリ</th>
-                    <th>アイテム名</th>
-                    <th>販売値</th>
-                    <th>買取値</th>
-                    <th>従業員販</th>
-                    <th>従業員買</th>
-                    <th>在庫数</th>
-                    <th class="hide-viewer">個数入力</th>
-                    <th class="hide-viewer">合計(販売)</th>
-                    <th class="hide-viewer">個別実行</th>
-                    <th class="hide-viewer" style="text-align:center;">削除</th>
-                </tr>`; 
-            } else { 
-                thead.innerHTML = `<tr>
-                    <th>カテゴリ</th><th>商品名</th><th>取引内容</th><th style="width: 80px; text-align: center;">割引</th><th>単価</th><th>在庫数</th>
-                    <th class="hide-viewer">個数</th><th class="hide-viewer">小計</th>
-                </tr>`; 
-            }
+            if (currentView === 'inventory') thead.innerHTML = `<tr><th class="hide-viewer" style="width:30px;">順</th><th>カテゴリ</th><th>アイテム名</th><th>販売値</th><th>買取値</th><th>従業員販</th><th>従業員買</th><th>在庫数</th><th class="hide-viewer" style="width:50px; text-align:center;">予約</th><th class="hide-viewer">個数</th><th class="hide-viewer">合計</th><th class="hide-viewer">個別実行</th><th class="hide-viewer">削除</th></tr>`; 
+            else thead.innerHTML = `<tr><th>カテゴリ</th><th>商品名</th><th>取引内容</th><th style="width: 70px; text-align:center;">割引</th><th style="width: 70px; text-align:center;">割増</th><th>単価</th><th>在庫数</th><th class="hide-viewer">個数</th><th class="hide-viewer">小計</th></tr>`; 
             
-            if (inventory.length === 0) { tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">アイテムがありません。</td></tr>`; updateBulkTotal(); return; }
+            if (inventory.length === 0) { tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;">アイテムがありません。</td></tr>`; updateBulkTotal(); return; }
             tbody.innerHTML = ''; const modeDef = menuTabs.find(m => m.id === currentMode);
             
             inventory.forEach((item, index) => {
                 if (!currentCategories.includes("すべて") && !currentCategories.includes(item.category)) return;
-                
                 const tr = document.createElement('tr');
                 if (currentView === 'inventory') {
-                    let moveBtns = '';
-                    if (currentCategories.includes("すべて")) {
-                        const isFirst = index === 0; const isLast = index === inventory.length - 1;
-                        moveBtns = `<button class="btn-move hide-viewer" title="上に移動" ${isFirst ? 'disabled' : ''} onclick="moveItem(${index}, -1)">🔼</button><br><button class="btn-move hide-viewer" title="下に移動" ${isLast ? 'disabled' : ''} onclick="moveItem(${index}, 1)">🔽</button>`;
-                    } else { moveBtns = `<span class="hide-viewer" style="font-size:10px; color:#adb5bd; line-height: 1;">「すべて」<br>のみ</span>`; }
-
-                    let categoryOptions = `<option value="">未設定</option>` + categories.map(c => `<option value="${c}" ${item.category === c ? 'selected' : ''}>${c}</option>`).join('');
-                    if (item.category && !categories.includes(item.category)) {
-                        categoryOptions += `<option value="${item.category}" selected>${item.category}</option>`;
-                    }
-
-                    tr.innerHTML = `
-                        <td class="hide-viewer" style="text-align:center;">${moveBtns}</td>
-                        <td><select class="category-select lock-viewer" onchange="updateItem(${index}, 'category', this.value)">${categoryOptions}</select></td>
+                    let catOpts = `<option value="">未設定</option>` + categories.map(c => `<option value="${c}" ${item.category === c ? 'selected' : ''}>${c}</option>`).join('');
+                    
+                    tr.innerHTML = `<td class="hide-viewer"></td>
+                        <td><select class="category-select lock-viewer" onchange="updateItem(${index}, 'category', this.value)">${catOpts}</select></td>
                         <td><input type="text" class="lock-viewer" value="${item.name}" onchange="updateItem(${index}, 'name', this.value)" style="border:none; background:transparent; font-size:16px;"></td>
-                        
                         <td><input type="text" class="price-input lock-viewer" value="${(item.sellPrice || 0).toLocaleString()}" onfocus="this.value='${item.sellPrice || 0}'" onchange="updateItem(${index}, 'sellPrice', this.value)"> 円</td>
                         <td><input type="text" class="price-input lock-viewer" value="${(item.buyPrice || 0).toLocaleString()}" onfocus="this.value='${item.buyPrice || 0}'" onchange="updateItem(${index}, 'buyPrice', this.value)" style="color: #f44336;"> 円</td>
                         <td><input type="text" class="price-input lock-viewer" value="${(item.empSellPrice || 0).toLocaleString()}" onfocus="this.value='${item.empSellPrice || 0}'" onchange="updateItem(${index}, 'empSellPrice', this.value)" style="color: #6f42c1;"> 円</td>
                         <td><input type="text" class="price-input lock-viewer" value="${(item.empBuyPrice || 0).toLocaleString()}" onfocus="this.value='${item.empBuyPrice || 0}'" onchange="updateItem(${index}, 'empBuyPrice', this.value)" style="color: #d63384;"> 円</td>
+                        <td style="font-weight: bold; font-size: 18px;">${item.stock.toLocaleString()}</td>
                         
-                        <td style="font-weight: bold; font-size: 18px; color: #333;">${item.stock.toLocaleString()}</td>
-                        <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" value="${item.inputQty || ''}" oninput="calcTotal(${index})"></td>
+                        <td class="hide-viewer" style="text-align:center;">
+                            <input type="checkbox" class="lock-viewer" style="transform: scale(1.5); cursor:pointer;" title="チェックを外すとお客様の予約フォームから消えます" ${item.reservable !== false ? 'checked' : ''} onchange="updateItem(${index}, 'reservable', this.checked)">
+                        </td>
+
+                        <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" value="${item.inputQty || ''}" oninput="calcTotal(${index})"></td>
                         <td class="hide-viewer" id="total-${index}" style="font-weight: bold; color: #0d6efd;">0円</td>
                         <td class="hide-viewer"><button class="btn-action ${modeDef ? modeDef.btnClass : 'green'}" onclick="executeAction(${index})">${modeDef ? modeDef.btnText : '実行'}</button></td>
-                        <td class="hide-viewer" style="text-align: center;"><button class="btn-delete-item" onclick="deleteItem(${index})" title="アイテムを削除">🗑️</button></td>`;
+                        <td class="hide-viewer"><button class="btn-delete-item" onclick="deleteItem(${index})">🗑️</button></td>`;
                 } else {
-                    let dispPrice = 0;
-                    let priceColor = '#333';
-                    
-                    if (item.tradeType === 'buy') { dispPrice = (item.buyPrice || 0); priceColor = '#f44336'; }
-                    else if (item.tradeType === 'empSell') { dispPrice = (item.empSellPrice || 0); priceColor = '#6f42c1'; }
-                    else if (item.tradeType === 'empBuy') { dispPrice = (item.empBuyPrice || 0); priceColor = '#d63384'; }
-                    else if (item.tradeType === 'stockOut' || item.tradeType === 'stockIn') { dispPrice = 0; priceColor = '#adb5bd'; }
-                    else { dispPrice = (item.sellPrice || 0); priceColor = '#333'; }
-
-                    if ((item.tradeType || 'sell') === 'sell') {
-                        dispPrice = Math.max(0, dispPrice - DISCOUNT_AMOUNTS[item.discountRank || 'none']);
-                    }
-                    
-                    tr.innerHTML = `
-                        <td style="color:#6c757d; font-weight:bold;">${item.category || '未設定'}</td>
+                    tr.innerHTML = `<td style="color:#6c757d; font-weight:bold;">${item.category || '未設定'}</td>
                         <td style="font-size:16px; font-weight:bold;">${item.name}</td>
-                        <td>
-                            <select id="trade-${index}" class="lock-viewer" onchange="calcTotal(${index})" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; font-weight: bold;">
-                                <option value="sell" ${(!item.tradeType || item.tradeType === 'sell') ? 'selected' : ''}>📤 販売 (客へ)</option>
-                                <option value="buy" ${(item.tradeType === 'buy') ? 'selected' : ''}>📥 買取 (客から)</option>
-                                <option value="empSell" ${(item.tradeType === 'empSell') ? 'selected' : ''}>👔 従業員販</option>
-                                <option value="empBuy" ${(item.tradeType === 'empBuy') ? 'selected' : ''}>👔 従業員買</option>
-                                <option value="stockOut" ${(item.tradeType === 'stockOut') ? 'selected' : ''}>📦 在庫出 (0円)</option>
-                                <option value="stockIn" ${(item.tradeType === 'stockIn') ? 'selected' : ''}>📦 在庫入 (0円)</option>
-                            </select>
-                        </td>
-                        <td style="text-align: center;">
-                            <button id="btn-discount-${index}" class="btn-discount rank-${item.discountRank || 'none'} lock-viewer" onclick="toggleDiscount(${index})" ${(item.tradeType !== 'sell') ? 'disabled style="opacity:0.5;"' : ''}>
-                                ${DISCOUNT_LABELS[item.discountRank || 'none']}
-                            </button>
-                        </td>
-                        <td id="price-disp-${index}" style="font-weight:bold; color: ${priceColor};">${dispPrice.toLocaleString()} 円</td>
+                        <td><select id="trade-${index}" class="lock-viewer" onchange="calcTotal(${index})" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold;"><option value="sell" ${(!item.tradeType || item.tradeType === 'sell') ? 'selected' : ''}>📤 販売</option><option value="buy" ${(item.tradeType === 'buy') ? 'selected' : ''}>📥 買取</option><option value="empSell" ${(item.tradeType === 'empSell') ? 'selected' : ''}>👔 従業員販</option><option value="empBuy" ${(item.tradeType === 'empBuy') ? 'selected' : ''}>👔 従業員買</option><option value="stockOut" ${(item.tradeType === 'stockOut') ? 'selected' : ''}>📦 在庫出</option><option value="stockIn" ${(item.tradeType === 'stockIn') ? 'selected' : ''}>📦 在庫入</option></select></td>
+                        <td style="text-align: center;"><button id="btn-discount-${index}" class="btn-discount rank-${item.discountRank || 'none'} lock-viewer" onclick="toggleDiscount(${index})" ${(item.tradeType !== 'sell') ? 'disabled style="opacity:0.5;"' : ''}>${DISCOUNT_LABELS[item.discountRank || 'none']}</button></td>
+                        
+                        <td style="text-align: center;"><button id="btn-premium-${index}" class="btn-premium rank-${item.premiumRank || 'none'} lock-viewer" onclick="togglePremium(${index})" ${!(item.tradeType === 'buy' || (!item.tradeType || item.tradeType === 'sell')) ? 'disabled style="opacity:0.5;"' : ''}>${PREMIUM_LABELS[item.premiumRank || 'none']}</button></td>
+                        
+                        <td id="price-disp-${index}" style="font-weight:bold;">0 円</td>
                         <td style="font-weight: bold; font-size: 18px; color: ${item.stock <= 0 ? '#f44336' : '#333'};">${item.stock.toLocaleString()}</td>
-                        <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" placeholder="0" value="${item.inputQty || ''}" oninput="calcTotal(${index})"></td>
+                        <td class="hide-viewer"><input type="number" class="input-number" id="qty-${index}" min="0" value="${item.inputQty || ''}" oninput="calcTotal(${index})"></td>
                         <td class="hide-viewer" id="total-${index}" style="font-weight: bold; color: #fd7e14;">0円</td>`;
                 }
                 tbody.appendChild(tr);
             });
-            
-            inventory.forEach((item, index) => {
-                if (document.getElementById(`qty-${index}`)) {
-                    calcTotal(index);
-                }
-            });
-            updateBulkTotal();
-        }
-
-        async function moveItem(index, direction) {
-            if (myRole === 'viewer') return;
-            if (!currentCategories.includes("すべて")) return alert("並び替えは、カテゴリを「すべて」にしている時のみ可能です。");
-
-            if (direction === -1 && index > 0) {
-                const temp = inventory[index - 1]; inventory[index - 1] = inventory[index]; inventory[index] = temp;
-            } else if (direction === 1 && index < inventory.length - 1) {
-                const temp = inventory[index + 1]; inventory[index + 1] = inventory[index]; inventory[index] = temp;
-            } else { return; }
-            await saveDataToFirebase();
+            inventory.forEach((item, index) => { if (document.getElementById(`qty-${index}`)) calcTotal(index); }); updateBulkTotal();
         }
 
         function calcTotal(index) {
-            const item = inventory[index];
-            const qtyInput = document.getElementById(`qty-${index}`);
-            
-            if (qtyInput) item.inputQty = qtyInput.value;
-            const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
+            const item = inventory[index]; const qtyInput = document.getElementById(`qty-${index}`);
+            if (qtyInput) item.inputQty = qtyInput.value; const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
             
             if (currentView === 'register') {
-                const tradeSelect = document.getElementById(`trade-${index}`);
-                if (tradeSelect) item.tradeType = tradeSelect.value;
-                
-                const tradeType = item.tradeType || 'sell';
-                let price = 0;
-                let priceColor = '#333';
-                let totalColor = '#0d6efd';
-                
-                if (tradeType === 'sell') { price = (item.sellPrice || 0); priceColor = '#333'; totalColor = '#0d6efd'; }
-                else if (tradeType === 'buy') { price = (item.buyPrice || 0); priceColor = '#f44336'; totalColor = '#f44336'; }
-                else if (tradeType === 'empSell') { price = (item.empSellPrice || 0); priceColor = '#6f42c1'; totalColor = '#6f42c1'; }
-                else if (tradeType === 'empBuy') { price = (item.empBuyPrice || 0); priceColor = '#d63384'; totalColor = '#d63384'; }
-                else if (tradeType === 'stockOut' || tradeType === 'stockIn') { price = 0; priceColor = '#adb5bd'; totalColor = '#adb5bd'; }
+                const tradeSelect = document.getElementById(`trade-${index}`); if (tradeSelect) item.tradeType = tradeSelect.value;
+                const tradeType = item.tradeType || 'sell'; let price = 0, color = '#333';
+                if (tradeType === 'sell') { price = item.sellPrice || 0; color = '#333'; } else if (tradeType === 'buy') { price = item.buyPrice || 0; color = '#f44336'; } else if (tradeType === 'empSell') { price = item.empSellPrice || 0; color = '#6f42c1'; } else if (tradeType === 'empBuy') { price = item.empBuyPrice || 0; color = '#d63384'; } else { price = 0; color = '#adb5bd'; }
                 
                 if (tradeType === 'sell') {
-                    const dAmount = DISCOUNT_AMOUNTS[item.discountRank || 'none'];
-                    price = Math.max(0, price - dAmount);
+                    price = Math.max(0, price - DISCOUNT_AMOUNTS[item.discountRank || 'none']);
                 }
                 
-                const priceDisp = document.getElementById(`price-disp-${index}`);
-                if (priceDisp) {
-                    priceDisp.innerText = `${price.toLocaleString()} 円`;
-                    priceDisp.style.color = priceColor;
-                }
+                const disp = document.getElementById(`price-disp-${index}`); if (disp) { disp.innerText = `${price.toLocaleString()} 円`; disp.style.color = color; }
                 
-                const discountBtn = document.getElementById(`btn-discount-${index}`);
-                if (discountBtn) {
-                    discountBtn.disabled = (tradeType !== 'sell');
-                    discountBtn.style.opacity = (tradeType !== 'sell') ? '0.5' : '1';
+                const dBtn = document.getElementById(`btn-discount-${index}`); if (dBtn) { dBtn.disabled = (tradeType !== 'sell'); dBtn.style.opacity = (tradeType !== 'sell') ? '0.5' : '1'; }
+                
+                const pBtn = document.getElementById(`btn-premium-${index}`); 
+                if (pBtn) { 
+                    pBtn.disabled = !(tradeType === 'buy' || tradeType === 'sell'); 
+                    pBtn.style.opacity = !(tradeType === 'buy' || tradeType === 'sell') ? '0.5' : '1'; 
                 }
 
-                const totalDisp = document.getElementById(`total-${index}`);
-                if (totalDisp) {
+                const tDisp = document.getElementById(`total-${index}`); 
+                if (tDisp) { 
                     if (!isNaN(qty) && qty > 0) { 
-                        const sign = (tradeType === 'buy' || tradeType === 'empBuy' || tradeType === 'stockIn') ? '-' : '';
-                        totalDisp.innerText = `${sign}${(qty * price).toLocaleString()}円`; 
-                        totalDisp.style.color = totalColor;
+                        // ★ 個数×単価の後に割増を足す
+                        let premium = 0;
+                        if (tradeType === 'buy' || tradeType === 'sell') {
+                            premium = PREMIUM_AMOUNTS[item.premiumRank || 'none'];
+                        }
+                        let rowTotal = (qty * price) + premium;
+                        
+                        const sign = ['buy','empBuy','stockIn'].includes(tradeType) ? '-' : ''; 
+                        tDisp.innerText = `${sign}${rowTotal.toLocaleString()}円`; 
+                        tDisp.style.color = color; 
                     } else { 
-                        totalDisp.innerText = `0円`; 
-                        totalDisp.style.color = '#fd7e14';
-                    }
+                        tDisp.innerText = `0円`; tDisp.style.color = '#fd7e14'; 
+                    } 
                 }
             } else {
-                const price = item.sellPrice || 0;
-                const totalDisp = document.getElementById(`total-${index}`);
-                if (totalDisp) {
-                    if(!isNaN(qty) && qty > 0) { 
-                        totalDisp.innerText = `${(qty * price).toLocaleString()}円`; 
-                    } else { 
-                        totalDisp.innerText = `0円`; 
-                    }
-                }
+                const tDisp = document.getElementById(`total-${index}`); if (tDisp) { tDisp.innerText = (!isNaN(qty) && qty > 0) ? `${(qty * (item.sellPrice || 0)).toLocaleString()}円` : `0円`; }
             }
             updateBulkTotal();
         }
 
         function importJSON() {
-            if (myRole === 'viewer') return alert("権限がありません！");
-            const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
-            input.onchange = e => {
-                const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
-                reader.onload = async (event) => {
-                    try {
-                        const parsed = JSON.parse(event.target.result);
-                        if (confirm(`JSONデータで上書きしますか？`)) {
-                            inventory = parsed.map(item => {
-                                let sPrice = item.sellPrice !== undefined ? item.sellPrice : (item.price || 0);
-                                let bPrice = item.buyPrice !== undefined ? item.buyPrice : (item.price || 0);
-                                let eSellPrice = item.empSellPrice !== undefined ? item.empSellPrice : (item.empPrice || 0);
-                                let eBuyPrice = item.empBuyPrice !== undefined ? item.empBuyPrice : 0;
-                                return { ...item, id: item.id || Date.now() + Math.floor(Math.random()*10000), category: item.category || "", sellPrice: sPrice, buyPrice: bPrice, empSellPrice: eSellPrice, empBuyPrice: eBuyPrice, stock: item.stock || 0 }
-                            });
-                            await saveDataToFirebase(); alert("登録しました！");
-                        }
-                    } catch(err) { alert("エラー"); }
-                }; reader.readAsText(file);
-            }; input.click();
+            if (myRole === 'viewer') return; const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+            input.onchange = e => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async (ev) => { try { const parsed = JSON.parse(ev.target.result); if (confirm(`上書きしますか？`)) { inventory = parsed; await saveDataToFirebase(); alert("登録完了"); } } catch(err) { alert("エラー"); } }; reader.readAsText(file); }; input.click();
         }
-
         function exportJSON() {
-            if (inventory.length === 0) return;
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(inventory, null, 2));
-            const dlAnchorElem = document.createElement('a'); const serverName = servers.find(s => s.id === currentServerId).name;
-            dlAnchorElem.setAttribute("href", dataStr); dlAnchorElem.setAttribute("download", `inventory_${serverName}.json`);
-            document.body.appendChild(dlAnchorElem); dlAnchorElem.click(); dlAnchorElem.remove();
+            if (inventory.length === 0) return; const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(inventory, null, 2)); const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", `inventory.json`); document.body.appendChild(dl); dl.click(); dl.remove();
         }
 
-        function renderCategoryEditList() {
-            const listDiv = document.getElementById('category-edit-list'); listDiv.innerHTML = '';
-            categories.forEach((cat, index) => {
-                const item = document.createElement('div'); item.className = 'list-item';
-                let deleteBtn = `<button class="btn-delete-tab" style="padding: 2px 6px;" onclick="deleteCategory(${index})" title="削除">🗑️</button>`;
-                item.innerHTML = `<span style="font-weight:bold; color:#333;">${cat}</span> ${deleteBtn}`; listDiv.appendChild(item);
-            });
-        }
-        async function addCategory() {
-            if (myRole !== 'admin') return alert("管理者のみ追加できます！");
-            const input = document.getElementById('new-category-name'); const name = input.value.trim();
-            if (!name) return; if (categories.includes(name) || name === "すべて") return;
-            categories.push(name); await database.ref('rooms/' + currentServerId + '/settings/categories').set(categories); input.value = '';
-        }
-        async function deleteCategory(index) {
-            if (myRole !== 'admin') return alert("管理者のみ削除できます！");
-            const catName = categories[index];
-            if (!confirm(`削除しますか？`)) return;
-            categories.splice(index, 1); await database.ref('rooms/' + currentServerId + '/settings/categories').set(categories);
-            
-            if (currentCategories.includes(catName)) {
-                currentCategories = currentCategories.filter(c => c !== catName);
-                if (currentCategories.length === 0) currentCategories = ['すべて'];
-            }
-
-            inventory.forEach(item => { if (item.category === catName) item.category = ''; });
-            await saveDataToFirebase(); 
-        }
-
-        function renderSidebarTabs() {
-            const container = document.getElementById('sidebar-tabs'); container.innerHTML = '';
-            menuTabs.forEach(tab => {
-                const div = document.createElement('div'); div.className = `tab ${currentMode === tab.id ? 'active' : ''}`;
-                div.innerHTML = `<span style="font-size: 18px;">${tab.icon}</span> <span>${tab.label}</span>`; 
-                div.onclick = () => setMode(tab.id); container.appendChild(div);
-            });
-        }
-        async function saveNewTab() {
-            if (myRole !== 'admin') return alert("管理者のみ追加できます！");
-            const name = document.getElementById('new-tab-name').value.trim(); const icon = document.getElementById('new-tab-icon').value.trim() || '💡';
-            const operation = document.getElementById('new-tab-operation').value; const color = document.getElementById('new-tab-color').value;
-            if (!name) return;
-            
-            let opText = "";
-            if (operation === 'add') opText = "在庫を増やす";
-            else if (operation === 'sub') opText = "在庫を減らす";
-            else if (operation === 'set') opText = "直接上書き";
-
-            const newTab = { id: 'tab_' + Date.now(), icon: icon, label: `${name} (${opText})`, title: `${icon} ${name}モード`, btnText: `${name}する`, actionText: `${name}`, operation: operation, btnClass: color };
-            menuTabs.push(newTab); await database.ref('rooms/' + currentServerId + '/settings/menuTabs').set(menuTabs);
-            closeModal('tab-modal'); setMode(newTab.id);
-        }
-        async function deleteCurrentTab() {
-            if (myRole !== 'admin') return alert("管理者のみ削除できます！");
-            if (menuTabs.length <= 1) return;
-            if (confirm(`削除しますか？`)) { 
-                menuTabs = menuTabs.filter(m => m.id !== currentMode); 
-                await database.ref('rooms/' + currentServerId + '/settings/menuTabs').set(menuTabs);
-                setMode(menuTabs[0].id); 
-            }
-        }
-        function setMode(modeId) {
-            currentMode = modeId; renderSidebarTabs();
-            const modeDef = menuTabs.find(m => m.id === modeId);
-            if(modeDef && currentView === 'inventory') { document.getElementById('mode-title').innerHTML = modeDef.title; renderTable(); }
-        }
-        
+        function renderCategoryEditList() { const listDiv = document.getElementById('category-edit-list'); listDiv.innerHTML = ''; categories.forEach((cat, index) => { listDiv.innerHTML += `<div class="list-item"><span style="font-weight:bold;">${cat}</span> <button class="btn-delete-tab" onclick="deleteCategory(${index})">🗑️</button></div>`; }); }
+        async function addCategory() { if (myRole !== 'admin') return; const input = document.getElementById('new-category-name'); const name = input.value.trim(); if (!name || categories.includes(name) || name === "すべて") return; categories.push(name); await database.ref('rooms/' + currentServerId + '/settings/categories').set(categories); input.value = ''; }
+        async function deleteCategory(index) { if (myRole !== 'admin') return; if (!confirm(`削除しますか？`)) return; categories.splice(index, 1); await database.ref('rooms/' + currentServerId + '/settings/categories').set(categories); }
+        function renderSidebarTabs() { const container = document.getElementById('sidebar-tabs'); container.innerHTML = ''; menuTabs.forEach(tab => { const div = document.createElement('div'); div.className = `tab ${currentMode === tab.id ? 'active' : ''}`; div.innerHTML = `<span style="font-size: 18px;">${tab.icon}</span> <span>${tab.label}</span>`; div.onclick = () => { currentMode = tab.id; renderSidebarTabs(); if(currentView === 'inventory'){ document.getElementById('mode-title').innerHTML = tab.title; renderTable(); } }; container.appendChild(div); }); }
+        async function saveNewTab() { if (myRole !== 'admin') return; const name = document.getElementById('new-tab-name').value.trim(); const icon = document.getElementById('new-tab-icon').value.trim() || '💡'; const op = document.getElementById('new-tab-operation').value; const col = document.getElementById('new-tab-color').value; if (!name) return; menuTabs.push({ id: 'tab_' + Date.now(), icon: icon, label: `${name}`, title: `${icon} ${name}モード`, btnText: `${name}する`, actionText: `${name}`, operation: op, btnClass: col }); await database.ref('rooms/' + currentServerId + '/settings/menuTabs').set(menuTabs); closeModal('tab-modal'); renderSidebarTabs(); }
+        async function deleteCurrentTab() { if (myRole !== 'admin' || menuTabs.length <= 1) return; if (confirm(`削除しますか？`)) { menuTabs = menuTabs.filter(m => m.id !== currentMode); await database.ref('rooms/' + currentServerId + '/settings/menuTabs').set(menuTabs); currentMode = menuTabs[0].id; renderSidebarTabs(); } }
         async function loadServers() {
-            const savedServers = localStorage.getItem('fivem_servers');
-            if (savedServers) { servers = JSON.parse(savedServers); currentServerId = localStorage.getItem('fivem_current_server') || servers[0].id; } 
-            else { 
-                const defaultId = generateRoomId(); servers =[{ id: defaultId, name: "メインサーバー", webhook: "" }]; currentServerId = defaultId; saveServersLocal(); 
-                await database.ref('rooms/' + defaultId + '/members/' + myUserId).set({ name: myUserName, role: 'admin', status: 'online', lastActive: Date.now() });
-            }
+            const saved = localStorage.getItem('fivem_servers');
+            if (saved) { servers = JSON.parse(saved); currentServerId = localStorage.getItem('fivem_current_server') || servers[0].id; } 
+            else { const defaultId = generateRoomId(); servers =[{ id: defaultId, name: "メインサーバー", webhook: "" }]; currentServerId = defaultId; saveServersLocal(); await database.ref('rooms/' + defaultId + '/members/' + myUserId).set({ name: myUserName, role: 'admin', status: 'online', lastActive: Date.now() }); await database.ref('rooms/' + defaultId + '/settings').set({ reservationId: Math.floor(10000 + Math.random() * 90000).toString(), reservationStatus: 'open' }); }
             renderServerSelect(); applyCurrentServerSettings();
         }
         function saveServersLocal() { localStorage.setItem('fivem_servers', JSON.stringify(servers)); localStorage.setItem('fivem_current_server', currentServerId); }
-        
-        function renderServerSelect() {
-            const select = document.getElementById('server-select'); select.innerHTML = '';
-            servers.forEach(srv => { const opt = document.createElement('option'); opt.value = srv.id; opt.textContent = srv.name; if (srv.id === currentServerId) opt.selected = true; select.appendChild(opt); });
-        }
-        
-        async function changeServer() {
-            await setOfflineCurrentRoom(); 
-            
-            currentServerId = document.getElementById('server-select').value; 
-            saveServersLocal(); applyCurrentServerSettings();
-            
-            isEditing = false; currentCategories = ["すべて"]; renderCategoryTabs(); inventory =[];
-            
-            document.getElementById('item-list').innerHTML = `<tr><td colspan="11" style="text-align:center; font-weight:bold; color: #0d6efd;">🔄 切り替え中...</td></tr>`;
-            
-            updatePresence(); 
-            updateBulkTotal(); listenToFirebase(); 
-            
-            if (currentView === 'analytics') {
-                document.getElementById('analytics-content').innerHTML = "";
-            } else if (currentView === 'log') {
-                document.getElementById('log-list').innerHTML = `<tr><td colspan="4" style="text-align:center;">読込中...</td></tr>`;
-            }
-        }
-
+        function renderServerSelect() { const select = document.getElementById('server-select'); select.innerHTML = ''; servers.forEach(srv => { const opt = document.createElement('option'); opt.value = srv.id; opt.textContent = srv.name; if (srv.id === currentServerId) opt.selected = true; select.appendChild(opt); }); }
+        async function changeServer() { await setOfflineCurrentRoom(); currentServerId = document.getElementById('server-select').value; saveServersLocal(); applyCurrentServerSettings(); isEditing = false; currentCategories = ["すべて"]; renderCategoryTabs(); inventory =[]; document.getElementById('item-list').innerHTML = `<tr><td colspan="13" style="text-align:center; font-weight:bold; color: #0d6efd;">🔄 切り替え中...</td></tr>`; updatePresence(); updateBulkTotal(); listenToFirebase(); }
         function generateRoomId() { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let id = ''; for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length)); return id; }
-        
-        function copyRoomId() {
-            const idText = document.getElementById('room-id-display').value;
-            navigator.clipboard.writeText(idText); alert("コピーしました");
-        }
-        async function renameServer() {
-            if (myRole !== 'admin') return;
-            const newName = document.getElementById('server-name-input').value;
-            if (newName.trim() !== "") await database.ref('rooms/' + currentServerId + '/settings/name').set(newName);
-        }
-        async function saveWebhook() {
-            if (myRole !== 'admin') return;
-            const webhookUrl = document.getElementById('webhook-url').value;
-            await database.ref('rooms/' + currentServerId + '/settings/webhook').set(webhookUrl);
-        }
-        async function deleteServer(isKicked = false) {
-            if (servers.length <= 1 && !isKicked) return alert("退出できません");
-            if (isKicked || confirm(`退出しますか？`)) { 
-                await setOfflineCurrentRoom();
-                servers = servers.filter(s => s.id !== currentServerId); 
-                currentServerId = servers[0] ? servers[0].id : null; 
-                saveServersLocal(); renderServerSelect(); changeServer(); 
-            }
-        }
-        function applyCurrentServerSettings() {
-            const currentServer = servers.find(s => s.id === currentServerId);
-            if (currentServer) { document.getElementById('server-name-input').value = currentServer.name; document.getElementById('room-id-display').value = currentServer.id; document.getElementById('webhook-url').value = currentServer.webhook || ""; }
-        }
-        
+        function copyRoomId() { navigator.clipboard.writeText(document.getElementById('room-id-display').value); alert("コピーしました"); }
+        async function renameServer() { if (myRole !== 'admin') return; const newName = document.getElementById('server-name-input').value; if (newName.trim() !== "") await database.ref('rooms/' + currentServerId + '/settings/name').set(newName); }
+        async function saveWebhook() { if (myRole === 'admin') await database.ref('rooms/' + currentServerId + '/settings/webhook').set(document.getElementById('webhook-url').value); }
+        async function deleteServer(isKicked = false) { if (servers.length <= 1 && !isKicked) return alert("退出できません"); if (isKicked || confirm(`退出しますか？`)) { await setOfflineCurrentRoom(); servers = servers.filter(s => s.id !== currentServerId); currentServerId = servers[0] ? servers[0].id : null; saveServersLocal(); renderServerSelect(); changeServer(); } }
+        function applyCurrentServerSettings() { const currentServer = servers.find(s => s.id === currentServerId); if (currentServer) { document.getElementById('server-name-input').value = currentServer.name; document.getElementById('room-id-display').value = currentServer.id; document.getElementById('webhook-url').value = currentServer.webhook || ""; } }
         function renderCategoryTabs() {
-            const container = document.getElementById('category-tabs');
-            let html = `<div class="category-tab ${currentCategories.includes('すべて') ? 'active' : ''}" onclick="setCategory('すべて')">すべて</div>`;
-            categories.forEach(cat => { 
-                html += `<div class="category-tab ${currentCategories.includes(cat) ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</div>`; 
-            });
-            html += `<div class="category-tab admin-only" style="background-color: #e9ecef; border-style: dashed; color: #333;" onclick="openModal('category-modal')">⚙️ 編集</div>`;
-            container.innerHTML = html;
+            const container = document.getElementById('category-tabs'); let html = `<div class="category-tab ${currentCategories.includes('すべて') ? 'active' : ''}" onclick="setCategory('すべて')">すべて</div>`;
+            categories.forEach(cat => html += `<div class="category-tab ${currentCategories.includes(cat) ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</div>`);
+            html += `<div class="category-tab admin-only" style="background-color: #e9ecef; border-style: dashed; color: #333;" onclick="openModal('category-modal')">⚙️ 編集</div>`; container.innerHTML = html;
         }
-
-        function setCategory(cat) { 
-            if (cat === 'すべて') {
-                currentCategories = ['すべて'];
-            } else {
-                currentCategories = currentCategories.filter(c => c !== 'すべて');
-                
-                if (currentCategories.includes(cat)) {
-                    currentCategories = currentCategories.filter(c => c !== cat);
-                    if (currentCategories.length === 0) currentCategories = ['すべて'];
-                } else {
-                    currentCategories.push(cat);
-                }
-            }
-            renderCategoryTabs(); 
-            renderTable(); 
-        }
-
-        async function updateItem(index, key, value) {
-            if (myRole === 'viewer') return;
-            if (key === 'sellPrice' || key === 'buyPrice' || key === 'empSellPrice' || key === 'empBuyPrice') { 
-                value = Number(String(value).replace(/,/g, '')); 
-                if (isNaN(value)) value = 0; 
-            }
-            inventory[index][key] = value; await saveDataToFirebase();
-        }
-        async function addNewItem() {
-            if (myRole === 'viewer') return alert("権限がありません！");
-            let newCategory = (currentCategories.length === 1 && !currentCategories.includes("すべて")) ? currentCategories[0] : "";
-            inventory.push({ id: Date.now(), name: "新しいアイテム", category: newCategory, sellPrice: 0, buyPrice: 0, empSellPrice: 0, empBuyPrice: 0, stock: 0 });
-            await saveDataToFirebase();
-        }
-        async function deleteItem(index) {
-            if (myRole === 'viewer') return alert("権限がありません！");
-            if (!confirm(`削除しますか？`)) return;
-            inventory.splice(index, 1); await saveDataToFirebase();
-        }
-
+        function setCategory(cat) { if (cat === 'すべて') currentCategories = ['すべて']; else { currentCategories = currentCategories.filter(c => c !== 'すべて'); if (currentCategories.includes(cat)) { currentCategories = currentCategories.filter(c => c !== cat); if (currentCategories.length === 0) currentCategories = ['すべて']; } else currentCategories.push(cat); } renderCategoryTabs(); renderTable(); }
+        async function updateItem(index, key, value) { if (myRole === 'viewer') return; if (['sellPrice', 'buyPrice', 'empSellPrice', 'empBuyPrice'].includes(key)) { value = Number(String(value).replace(/,/g, '')); if (isNaN(value)) value = 0; } inventory[index][key] = value; await saveDataToFirebase(); }
+        async function addNewItem() { if (myRole === 'viewer') return; inventory.push({ id: Date.now(), name: "新しいアイテム", category: "", sellPrice: 0, buyPrice: 0, empSellPrice: 0, empBuyPrice: 0, stock: 0, reservable: true }); await saveDataToFirebase(); }
+        async function deleteItem(index) { if (myRole === 'viewer' || !confirm(`削除しますか？`)) return; inventory.splice(index, 1); await saveDataToFirebase(); }
         async function executeAction(index) {
-            if (myRole === 'viewer') return alert("権限がありません！");
-            const item = inventory[index]; 
-            const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
-            const modeDef = menuTabs.find(m => m.id === currentMode);
-            
-            if (isNaN(qty) || qty < 0) return alert("個数を正しく入力してください！");
-            if (qty === 0 && modeDef.operation !== 'set') return alert("個数を入力してください！");
-            
+            if (myRole === 'viewer') return; const item = inventory[index]; const qty = Number(String(item.inputQty || '').replace(/,/g, '')); const modeDef = menuTabs.find(m => m.id === currentMode);
+            if (isNaN(qty) || qty < 0 || (qty === 0 && modeDef.operation !== 'set')) return alert("正しい個数を入力してください");
             if (modeDef.operation === 'sub' && item.stock < qty) return alert(`在庫不足`);
-            
-            const oldStock = item.stock;
-            if (modeDef.operation === 'add') item.stock += qty; 
-            else if (modeDef.operation === 'sub') item.stock -= qty; 
-            else if (modeDef.operation === 'set') item.stock = qty; 
-            
-            await saveDataToFirebase(); 
-            await saveLog(myUserName, "📦 在庫更新", `${item.name}: ${qty}個 (${modeDef.actionText})`);
-
-            const webhookUrl = document.getElementById('webhook-url').value;
-            const serverName = servers.find(s => s.id === currentServerId).name;
-            if (webhookUrl) {
-                const message = { embeds: [{ title: `📦 [${serverName}] 在庫更新`, color: modeDef.operation === 'add' ? 3066993 : (modeDef.operation === 'set' ? 3447003 : 15158332), fields: [ { name: "アイテム", value: item.name, inline: true }, { name: "操作", value: modeDef.actionText, inline: true }, { name: modeDef.operation === 'set' ? "入力値" : "数量", value: `${qty} 個`, inline: true }, { name: "変動前", value: `${oldStock} 個`, inline: true }, { name: "変動後", value: `${item.stock} 個`, inline: true } ], timestamp: new Date().toISOString() }] };
-                fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(message) });
-            }
-            
-            item.inputQty = "";
-            renderTable();
+            if (modeDef.operation === 'add') item.stock += qty; else if (modeDef.operation === 'sub') item.stock -= qty; else if (modeDef.operation === 'set') item.stock = qty; 
+            await saveDataToFirebase(); await saveLog(myUserName, "📦 在庫更新", `${item.name}: ${qty}個 (${modeDef.actionText})`); item.inputQty = ""; renderTable();
         }
-
         async function executeBulkAction() {
-            if (myRole === 'viewer') return alert("権限がありません！");
-            const modeDef = menuTabs.find(m => m.id === currentMode); let targets =[];
-            inventory.forEach((item, index) => {
-                const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
-                if (!isNaN(qty) && (qty > 0 || (qty === 0 && modeDef.operation === 'set'))) targets.push({ item: item, index: index, qty: qty }); 
-            });
-            if (targets.length === 0) return;
-            if (modeDef.operation === 'sub' && targets.find(t => t.item.stock < t.qty)) return alert(`在庫不足あり`);
-            if (!confirm(`${targets.length} 件実行しますか？`)) return;
-            
-            targets.forEach(t => { 
-                if (modeDef.operation === 'add') t.item.stock += t.qty; 
-                else if (modeDef.operation === 'sub') t.item.stock -= t.qty;
-                else if (modeDef.operation === 'set') t.item.stock = t.qty; 
-            });
-            
-            await saveDataToFirebase(); 
-            let logDetails = targets.map(t => `${t.item.name}: ${t.qty}個`).join(", ");
-            await saveLog(myUserName, "📦 在庫一括更新", `${modeDef.actionText} -> ${logDetails}`);
-
-            alert(`実行完了`);
-            
-            inventory.forEach(item => item.inputQty = "");
-            renderTable();
+            if (myRole === 'viewer') return; const modeDef = menuTabs.find(m => m.id === currentMode); let targets = [];
+            inventory.forEach((item, index) => { const qty = Number(String(item.inputQty || '').replace(/,/g, '')); if (!isNaN(qty) && (qty > 0 || (qty === 0 && modeDef.operation === 'set'))) targets.push({ item, qty }); });
+            if (targets.length === 0 || !confirm(`${targets.length} 件実行しますか？`)) return;
+            targets.forEach(t => { if (modeDef.operation === 'add') t.item.stock += t.qty; else if (modeDef.operation === 'sub') t.item.stock -= t.qty; else if (modeDef.operation === 'set') t.item.stock = t.qty; });
+            await saveDataToFirebase(); await saveLog(myUserName, "📦 在庫一括更新", `${modeDef.actionText} -> ${targets.map(t => `${t.item.name}: ${t.qty}個`).join(", ")}`);
+            inventory.forEach(item => item.inputQty = ""); renderTable();
         }
     </script>
 </body>
