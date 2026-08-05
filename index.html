@@ -132,7 +132,7 @@
         </div>
     </div>
 
-    <!-- 顧客登録用モーダル -->
+    <!-- 顧客登録用モーダル (電話番号追加) -->
     <div id="customer-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 style="margin-top:0; color: #17a2b8;">👥 顧客登録・編集</h3>
@@ -141,6 +141,8 @@
             <input type="text" id="cus-citizen-id" placeholder="例: 1234">
             <label>👤 名前</label>
             <input type="text" id="cus-name" placeholder="顧客名">
+            <label>📞 電話番号</label>
+            <input type="text" id="cus-phone" placeholder="例: 123-4567">
             <label>🏷️ 顧客属性 (価格帯)</label>
             <select id="cus-type">
                 <option value="white">白市民</option>
@@ -206,6 +208,7 @@
             <select id="org-select"></select>
             <button class="btn-staff-edit edit-only" onclick="openModal('org-modal')">⚙️ 組織一覧を編集する</button>
 
+            <!-- 顧客の紐づけ用 -->
             <label style="margin-top: 15px; color:#17a2b8;">👥 会計する顧客 (売上加算用)</label>
             <select id="reg-customer-select" style="border-color:#17a2b8;" onchange="onSelectRegCustomer()">
                 <option value="">-- 選択しない --</option>
@@ -335,19 +338,21 @@
             </tbody>
         </table>
 
+        <!-- 顧客テーブルに電話番号を追加 -->
         <table id="cus-table" class="stripe-table" style="display: none;">
             <thead>
                 <tr>
-                    <th style="width: 140px;">市民ID</th>
+                    <th style="width: 120px;">市民ID</th>
                     <th>顧客名</th>
+                    <th style="width: 140px;">電話番号</th>
                     <th style="width: 100px;">属性</th>
                     <th style="width: 200px;">会員ステータス</th>
-                    <th style="width: 150px; text-align: right;">累計売上</th>
+                    <th style="width: 120px; text-align: right;">累計売上</th>
                     <th style="width: 100px; text-align:center;" class="hide-viewer">操作</th>
                 </tr>
             </thead>
             <tbody id="cus-list">
-                <tr><td colspan="6" style="text-align:center;">読込中...</td></tr>
+                <tr><td colspan="7" style="text-align:center;">読込中...</td></tr>
             </tbody>
         </table>
 
@@ -536,7 +541,7 @@
             const searchTxt = document.getElementById('customer-search').value.toLowerCase();
             const filtered = customers.filter(c => (c.name || '').toLowerCase().includes(searchTxt) || (c.citizenId || '').toLowerCase().includes(searchTxt));
             
-            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">顧客が見つかりません</td></tr>'; return; }
+            if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">顧客が見つかりません</td></tr>'; return; }
             
             filtered.sort((a,b) => (b.totalSales || 0) - (a.totalSales || 0)).forEach(c => {
                 const tr = document.createElement('tr');
@@ -550,6 +555,7 @@
                 tr.innerHTML = `
                     <td style="font-weight:bold; color:#0d6efd;">${c.citizenId || '-'}</td>
                     <td style="font-weight:bold;">${c.name || '-'}</td>
+                    <td style="color:#6c757d; font-size:13px;">${c.phone || '-'}</td>
                     <td>${typeBadge}</td>
                     <td><span style="background:#e9ecef; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${rankDef.name}</span></td>
                     <td style="text-align:right; font-weight:bold; color:#198754;">${(c.totalSales || 0).toLocaleString()} 円</td>
@@ -568,6 +574,7 @@
                 document.getElementById('cus-id').value = c.id;
                 document.getElementById('cus-citizen-id').value = c.citizenId || '';
                 document.getElementById('cus-name').value = c.name || '';
+                document.getElementById('cus-phone').value = c.phone || '';
                 document.getElementById('cus-type').value = c.type || 'white';
                 document.getElementById('cus-rank').value = c.rank || (customRanks[0]?.id || '');
                 document.getElementById('cus-sales').value = c.totalSales || 0;
@@ -575,6 +582,7 @@
                 document.getElementById('cus-id').value = '';
                 document.getElementById('cus-citizen-id').value = '';
                 document.getElementById('cus-name').value = '';
+                document.getElementById('cus-phone').value = '';
                 document.getElementById('cus-type').value = 'white';
                 document.getElementById('cus-rank').value = customRanks[0]?.id || '';
                 document.getElementById('cus-sales').value = '';
@@ -587,6 +595,7 @@
             const id = document.getElementById('cus-id').value;
             const cid = document.getElementById('cus-citizen-id').value.trim();
             const name = document.getElementById('cus-name').value.trim();
+            const phone = document.getElementById('cus-phone').value.trim();
             const type = document.getElementById('cus-type').value;
             const rank = document.getElementById('cus-rank').value;
             const sales = parseInt(document.getElementById('cus-sales').value) || 0;
@@ -594,7 +603,7 @@
             if (!cid) return alert("市民IDを入力してください");
             if (!name) return alert("顧客名を入力してください");
 
-            const data = { citizenId: cid, name: name, type: type, rank: rank, totalSales: sales };
+            const data = { citizenId: cid, name: name, phone: phone, type: type, rank: rank, totalSales: sales };
             if (id) {
                 await database.ref('rooms/' + currentServerId + '/customers/' + id).update(data);
             } else {
@@ -709,7 +718,7 @@
                     if (!exists) {
                         const defaultRank = customRanks[0] ? customRanks[0].id : 'rank_none';
                         await database.ref('rooms/' + currentServerId + '/customers').push({
-                            citizenId: req.citizenId, name: req.name, type: req.type || 'white', rank: defaultRank, totalSales: 0
+                            citizenId: req.citizenId, name: req.name, phone: req.phone || '', type: req.type || 'white', rank: defaultRank, totalSales: 0
                         });
                     }
                     await snap.ref.remove();
@@ -851,7 +860,6 @@
                         currentReservationId = null; document.getElementById('my-rsv-id').value = "未設定"; reservationsList = []; if (currentView === 'reservation') renderReservations();
                     }
 
-                    // カスタムランクの同期
                     if (data.customRanks) {
                         customRanks = data.customRanks;
                     } else {
