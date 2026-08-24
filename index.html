@@ -715,46 +715,50 @@
                 if (currentView === 'reservation') renderReservations();
             });
 
-            // ★追加機能：新規予約が来た際のDiscord通知 (多重通知防止処理つき)
+            // ★ 新規予約が来た際のDiscord通知 (多重通知防止処理つき)
             dbRefReservations.on('child_added', (snapshot) => {
                 const rsv = snapshot.val();
                 if (rsv.status === 'new' && !rsv.notified) {
-                    // トランザクションで「自分が一番最初に処理したか」を判定する
                     snapshot.ref.child('notified').transaction((currentVal) => {
-                        if (currentVal === null || currentVal === false) {
-                            return true; // trueに更新を試みる
-                        }
-                        return; // すでに誰かが更新済みなら中止
-                    }, (error, committed, txnSnapshot) => {
-                        if (error) {
-                            console.error("予約通知のトランザクションに失敗", error);
-                        } else if (committed) {
-                            // 自分が一番乗りで true にできた場合のみ、Discordへ送信
-                            sendRsvWebhook(rsv);
-                        }
+                        if (currentVal === null || currentVal === false) return true;
+                        return; 
+                    }, (error, committed) => {
+                        if (error) console.error("予約通知のトランザクションに失敗", error);
+                        else if (committed) sendRsvWebhook(rsv);
                     });
                 }
             });
 
-            // 新規顧客リクエスト監視
+            // ★ 新規顧客リクエスト監視 (多重登録防止処理つき)
             dbRefNewCustomers = database.ref('public_new_customers/' + currentReservationId);
-            dbRefNewCustomers.on('child_added', async (snap) => {
+            dbRefNewCustomers.on('child_added', (snap) => {
                 if (myRole === 'viewer') return; 
                 const req = snap.val();
-                if (req && req.citizenId) {
-                    const exists = customers.find(c => c.citizenId === req.citizenId);
-                    if (!exists) {
-                        const defaultRank = customRanks[0] ? customRanks[0].id : 'rank_none';
-                        await database.ref('rooms/' + currentServerId + '/customers').push({
-                            citizenId: req.citizenId, name: req.name, phone: req.phone || '', type: req.type || 'white', rank: defaultRank, totalSales: 0
-                        });
+                if (!req || req.processed) return;
+
+                snap.ref.child('processed').transaction((currentVal) => {
+                    if (currentVal === null || currentVal === false) return true;
+                    return; 
+                }, async (error, committed) => {
+                    if (error) {
+                        console.error("新規顧客トランザクションエラー", error);
+                    } else if (committed) {
+                        if (req.citizenId) {
+                            const exists = customers.find(c => c.citizenId === req.citizenId);
+                            if (!exists) {
+                                const defaultRank = customRanks[0] ? customRanks[0].id : 'rank_none';
+                                await database.ref('rooms/' + currentServerId + '/customers').push({
+                                    citizenId: req.citizenId, name: req.name, phone: req.phone || '', type: req.type || 'white', rank: defaultRank, totalSales: 0
+                                });
+                            }
+                        }
+                        await snap.ref.remove();
                     }
-                    await snap.ref.remove();
-                }
+                });
             });
         }
 
-        // ★追加機能：予約をDiscordへ送信する関数
+        // 予約をDiscordへ送信する関数
         async function sendRsvWebhook(rsv) {
             const server = servers.find(s => s.id === currentServerId);
             if (!server || !server.rsvWebhook) return;
@@ -960,7 +964,6 @@
                         if (data.name && document.activeElement.id !== 'server-name-input') { servers[idx].name = data.name; document.getElementById('server-name-input').value = data.name; }
                         if (data.webhook !== undefined && document.activeElement.id !== 'webhook-url') { servers[idx].webhook = data.webhook; document.getElementById('webhook-url').value = data.webhook; }
                         
-                        // ★追加：予約用Webhookの反映
                         if (data.rsvWebhook !== undefined && document.activeElement.id !== 'rsv-webhook-url') { 
                             servers[idx].rsvWebhook = data.rsvWebhook; 
                             document.getElementById('rsv-webhook-url').value = data.rsvWebhook; 
@@ -1024,7 +1027,7 @@
         async function verifyMasterKey() { const inputKey = document.getElementById('auth-masterkey').value.trim(); if (inputKey === currentMasterKey) { await database.ref('rooms/' + currentServerId + '/members/' + myUserId + '/role').set('admin'); alert("✅ 管理者権限を取得しました！"); closeModal('auth-modal'); } else alert("❌ マスターキーが違います！"); }
         async function saveMasterKey() { if (myRole !== 'admin') return; const newKey = document.getElementById('settings-masterkey').value.trim(); if (!/^\d{4}$/.test(newKey)) return alert("4桁の数字にしてください。"); await database.ref('rooms/' + currentServerId + '/settings/masterKey').set(newKey); alert("更新しました"); }
         
-        // ★追加：予約Webhookの保存機能
+        // 予約Webhookの保存機能
         async function saveRsvWebhook() { 
             if (myRole === 'admin') {
                 await database.ref('rooms/' + currentServerId + '/settings/rsvWebhook').set(document.getElementById('rsv-webhook-url').value); 
