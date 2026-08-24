@@ -105,6 +105,7 @@
 <body class="role-viewer">
     
     <!-- 各種モーダル -->
+    <div id="ocr-apply-modal" class="modal-overlay"><div class="modal-content" style="width: 380px;"><h3 style="margin-top:0; color: #6f42c1;">📷 Discord読み取り結果の適用</h3><p style="font-size: 12px; color: #666; margin-bottom: 15px;">Discord Botから在庫データが届きました。<br>以下のアイテム個数をPOSに入力しますか？</p><div id="ocr-apply-list" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 6px; background-color: #fcfcfc;"></div><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="cancelOCRApply()" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #6f42c1; width: auto;" onclick="applyDiscordOCR()">💻 POSに適用する</button></div></div></div>
     <div id="tab-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #0d6efd;">✨ 新しいタブを作成</h3><label>📌 タブの名前</label><input type="text" id="new-tab-name" placeholder="消費"><label>🔣 アイコン</label><input type="text" id="new-tab-icon" placeholder="💡" maxlength="2"><label>🔽 実行時の在庫の変動</label><select id="new-tab-operation"><option value="sub">在庫を減らす (-)</option><option value="add">在庫を増やす (+)</option><option value="set">数値をそのまま上書き (=)</option></select><label>🎨 実行ボタンの色</label><select id="new-tab-color"><option value="orange">オレンジ色</option><option value="blue">青色</option><option value="green">緑色</option><option value="red">赤色</option></select><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('tab-modal')" style="width:auto;">キャンセル</button><button class="btn-add" onclick="saveNewTab()" style="width:auto;">作成する</button></div></div></div>
     <div id="auth-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #ff9800;">🔑 管理者権限を取得</h3><label>ルームのマスターキー (4桁)</label><input type="password" id="auth-masterkey" placeholder="****" maxlength="4"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('auth-modal')" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #ff9800;" onclick="verifyMasterKey()">認証する</button></div></div></div>
     <div id="create-room-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #4CAF50;">➕ 新しいルームを作る</h3><label>📌 ルームの名前</label><input type="text" id="new-room-name" placeholder="ルーム名を入力"><label style="margin-top:15px; color: #f8cb00;">🔑 マスターキー (4桁)</label><input type="text" id="new-room-masterkey" placeholder="例: 1234" maxlength="4"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('create-room-modal')" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #4CAF50;" onclick="createRoom()">作成する</button></div></div></div>
@@ -132,7 +133,7 @@
         </div>
     </div>
 
-    <!-- 顧客登録用モーダル (電話番号追加) -->
+    <!-- 顧客登録用モーダル -->
     <div id="customer-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 style="margin-top:0; color: #17a2b8;">👥 顧客登録・編集</h3>
@@ -229,8 +230,13 @@
             <label style="margin-top: 10px; display:inline-block;">🔑 マスターキー (4桁)</label>
             <input type="text" id="settings-masterkey" placeholder="****" maxlength="4" onchange="saveMasterKey()">
 
-            <label style="margin-top: 10px; display:inline-block;">🔗 Discord Webhook URL</label>
+            <label style="margin-top: 10px; display:inline-block;">🔗 レジ会計用 Discord Webhook URL</label>
             <input type="password" id="webhook-url" placeholder="https://..." onchange="saveWebhook()">
+            
+            <!-- ★追加部分：予約通知用Webhook -->
+            <label style="margin-top: 10px; display:inline-block; color: #0d6efd;">🔗 予約到着用 Discord Webhook URL</label>
+            <input type="password" id="rsv-webhook-url" placeholder="https://..." onchange="saveRsvWebhook()">
+
             <button class="btn-delete-server" onclick="deleteServer()">🗑️ このルームから退出(削除)</button>
             
             <div style="border-top: 1px dashed #495057; margin: 15px 0;"></div>
@@ -700,12 +706,34 @@
             if (dbRefNewCustomers) dbRefNewCustomers.off();
             if (!currentReservationId) return;
             
-            // 予約リクエスト監視
             dbRefReservations = database.ref('public_reservations/' + currentReservationId);
+            
+            // 予約リクエスト監視 (画面表示用)
             dbRefReservations.on('value', (snapshot) => {
                 const data = snapshot.val(); reservationsList = [];
                 if (data) { Object.keys(data).forEach(key => reservationsList.push({ id: key, ...data[key] })); reservationsList.sort((a, b) => b.createdAt - a.createdAt); }
                 if (currentView === 'reservation') renderReservations();
+            });
+
+            // ★追加機能：新規予約が来た際のDiscord通知 (多重通知防止処理つき)
+            dbRefReservations.on('child_added', (snapshot) => {
+                const rsv = snapshot.val();
+                if (rsv.status === 'new' && !rsv.notified) {
+                    // トランザクションで「自分が一番最初に処理したか」を判定する
+                    snapshot.ref.child('notified').transaction((currentVal) => {
+                        if (currentVal === null || currentVal === false) {
+                            return true; // trueに更新を試みる
+                        }
+                        return; // すでに誰かが更新済みなら中止
+                    }, (error, committed, txnSnapshot) => {
+                        if (error) {
+                            console.error("予約通知のトランザクションに失敗", error);
+                        } else if (committed) {
+                            // 自分が一番乗りで true にできた場合のみ、Discordへ送信
+                            sendRsvWebhook(rsv);
+                        }
+                    });
+                }
             });
 
             // 新規顧客リクエスト監視
@@ -724,6 +752,32 @@
                     await snap.ref.remove();
                 }
             });
+        }
+
+        // ★追加機能：予約をDiscordへ送信する関数
+        async function sendRsvWebhook(rsv) {
+            const server = servers.find(s => s.id === currentServerId);
+            if (!server || !server.rsvWebhook) return;
+
+            const rankDef = customRanks.find(r => r.id === rsv.rankId) || { name: '未確認' };
+            const totalAmountStr = rsv.totalAmount !== undefined ? `${rsv.totalAmount.toLocaleString()} 円` : '-';
+            
+            const embed = {
+                title: `📅 新しい予約・依頼が届きました！`,
+                color: 3447003, // 青色
+                description: `**お名前:** ${rsv.name} [${rankDef.name}]\n**市民ID:** ${rsv.citizenId || "不明"}\n**合計金額:** ${totalAmountStr}\n\n**📝 ご用件・希望内容:**\n${rsv.detail || "記載なし"}`,
+                timestamp: new Date(rsv.createdAt).toISOString()
+            };
+
+            try {
+                await fetch(server.rsvWebhook, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ embeds: [embed] }) 
+                });
+            } catch (e) {
+                console.error("予約Webhookの送信に失敗しました", e);
+            }
         }
 
         function renderReservations() {
@@ -804,6 +858,28 @@
         function listenToFirebase() {
             if (!currentServerId) return;
             if (dbRefInventory) dbRefInventory.off(); if (dbRefStaffs) dbRefStaffs.off(); if (dbRefOrgs) dbRefOrgs.off(); if (dbRefSettings) dbRefSettings.off(); if (dbRefMembers) dbRefMembers.off(); if (dbRefLogs) dbRefLogs.off(); if (dbRefCustomers) dbRefCustomers.off();
+            
+            // Discordからの読み取り通知を監視
+            database.ref('rooms/' + currentServerId + '/pending_ocr').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                currentPendingOCRData = data;
+                const listDiv = document.getElementById('ocr-apply-list');
+                listDiv.innerHTML = '';
+                
+                Object.entries(data).forEach(([name, qty]) => {
+                    listDiv.innerHTML += `
+                        <div style="display:flex; justify-content:space-between; padding: 6px 0; border-bottom: 1px solid #f1f1f1;">
+                            <span style="font-weight:bold;">${name}</span>
+                            <span style="color:#0d6efd; font-weight:bold;">${qty} 個</span>
+                        </div>
+                    `;
+                });
+                
+                openModal('ocr-apply-modal');
+            });
+
             dbRefMembers = database.ref('rooms/' + currentServerId + '/members');
             dbRefMembers.on('value', (snap) => { roomMembers = snap.val() || {}; if (Object.keys(roomMembers).length > 0 && !roomMembers[myUserId]) { myRole = 'viewer'; alert("退出させられました。"); deleteServer(true); return; } myRole = roomMembers[myUserId] ? roomMembers[myUserId].role : 'viewer'; applyPermissions(); renderSidebarMembers(); if (document.getElementById('members-modal').style.display === 'flex') renderMembersEditList(); });
             
@@ -883,6 +959,13 @@
                     if (idx !== -1) {
                         if (data.name && document.activeElement.id !== 'server-name-input') { servers[idx].name = data.name; document.getElementById('server-name-input').value = data.name; }
                         if (data.webhook !== undefined && document.activeElement.id !== 'webhook-url') { servers[idx].webhook = data.webhook; document.getElementById('webhook-url').value = data.webhook; }
+                        
+                        // ★追加：予約用Webhookの反映
+                        if (data.rsvWebhook !== undefined && document.activeElement.id !== 'rsv-webhook-url') { 
+                            servers[idx].rsvWebhook = data.rsvWebhook; 
+                            document.getElementById('rsv-webhook-url').value = data.rsvWebhook; 
+                        }
+
                         saveServersLocal(); renderServerSelect();
                     }
                 }
@@ -892,12 +975,62 @@
             dbRefLogs = database.ref('rooms/' + currentServerId + '/logs'); dbRefLogs.limitToLast(100).on('value', snap => { const data = snap.val(); actionLogs = []; if (data) Object.keys(data).forEach(key => actionLogs.push({ id: key, ...data[key] })); actionLogs.sort((a, b) => b.timestamp - a.timestamp); if (currentView === 'log') renderLogs(); });
         }
 
+        // --- Discord OCR適用処理 ---
+        function applyDiscordOCR() {
+            if (!currentPendingOCRData) return;
+            if (myRole === 'viewer') {
+                alert("閲覧モードでは適用できません！");
+                return;
+            }
+            
+            let matchCount = 0;
+            inventory.forEach((item, index) => {
+                if (currentPendingOCRData[item.name] !== undefined) {
+                    item.inputQty = currentPendingOCRData[item.name];
+                    matchCount++;
+                    
+                    const qtyInput = document.getElementById(`qty-${index}`);
+                    if (qtyInput) qtyInput.value = item.inputQty;
+                    
+                    calcTotal(index);
+                }
+            });
+            
+            renderTable();
+            database.ref('rooms/' + currentServerId + '/pending_ocr').remove();
+            closeModal('ocr-apply-modal');
+            alert(`✅ ${matchCount} 件のアイテム個数を入力欄に反映しました！`);
+            currentPendingOCRData = null;
+        }
+
+        function cancelOCRApply() {
+            database.ref('rooms/' + currentServerId + '/pending_ocr').remove();
+            closeModal('ocr-apply-modal');
+            currentPendingOCRData = null;
+        }
+
         async function saveDataToFirebase() { if (!currentServerId || myRole === 'viewer') return; try { const clean = inventory.map(item => { const { inputQty, tradeType, discountRank, premiumRank, ...rest } = item; return rest; }); await database.ref('rooms/' + currentServerId + '/inventory').set(clean); } catch (e) { console.error(e); } }
-        function openModal(id) { if (id === 'auth-modal') document.getElementById('auth-masterkey').value = ''; document.getElementById(id).style.display = 'flex'; }
+        
+        function openModal(id) { 
+            if (id === 'auth-modal') document.getElementById('auth-masterkey').value = ''; 
+            document.getElementById(id).style.display = 'flex'; 
+            if (id === 'category-modal') renderCategoryEditList();
+            if (id === 'staff-modal') renderStaffEditList();
+            if (id === 'org-modal') renderOrgEditList();
+            if (id === 'rank-modal') renderRankEditList();
+        }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        
         async function verifyMasterKey() { const inputKey = document.getElementById('auth-masterkey').value.trim(); if (inputKey === currentMasterKey) { await database.ref('rooms/' + currentServerId + '/members/' + myUserId + '/role').set('admin'); alert("✅ 管理者権限を取得しました！"); closeModal('auth-modal'); } else alert("❌ マスターキーが違います！"); }
         async function saveMasterKey() { if (myRole !== 'admin') return; const newKey = document.getElementById('settings-masterkey').value.trim(); if (!/^\d{4}$/.test(newKey)) return alert("4桁の数字にしてください。"); await database.ref('rooms/' + currentServerId + '/settings/masterKey').set(newKey); alert("更新しました"); }
         
+        // ★追加：予約Webhookの保存機能
+        async function saveRsvWebhook() { 
+            if (myRole === 'admin') {
+                await database.ref('rooms/' + currentServerId + '/settings/rsvWebhook').set(document.getElementById('rsv-webhook-url').value); 
+            }
+        }
+
         function openMembersModal() { document.getElementById('members-modal').style.display = 'flex'; renderMembersEditList(); }
         function renderMembersEditList() {
             const listDiv = document.getElementById('members-list'); listDiv.innerHTML = '';
@@ -908,13 +1041,14 @@
         }
         async function updateMemberRole(uid, newRole) { if (myRole === 'admin') await database.ref('rooms/' + currentServerId + '/members/' + uid + '/role').set(newRole); }
         async function kickMember(uid, name) { if (myRole === 'admin' && confirm(`「${name}」を追放しますか？`)) await database.ref('rooms/' + currentServerId + '/members/' + uid).remove(); }
+        
         async function createRoom() {
             const name = document.getElementById('new-room-name').value.trim(); const mKey = document.getElementById('new-room-masterkey').value.trim();
             if (!name || !mKey || !/^\d{4}$/.test(mKey)) return alert("名前と4桁のマスターキーを入力してください！");
             const newId = generateRoomId(); const rsvId = Math.floor(10000 + Math.random() * 90000).toString(); 
-            const initialSettings = { name: name, webhook: "", masterKey: mKey, categories: DEFAULT_CATEGORIES, reservationId: rsvId, reservationStatus: 'open', menuTabs: menuTabs };
+            const initialSettings = { name: name, webhook: "", rsvWebhook: "", masterKey: mKey, categories: DEFAULT_CATEGORIES, reservationId: rsvId, reservationStatus: 'open', menuTabs: menuTabs };
             await database.ref('rooms/' + newId + '/settings').set(initialSettings); await database.ref('rooms/' + newId + '/members/' + myUserId).set({ name: myUserName, role: 'admin', status: 'online', lastActive: Date.now() });
-            servers.push({ id: newId, name: name, webhook: "" }); await setOfflineCurrentRoom(); currentServerId = newId; saveServersLocal(); renderServerSelect(); closeModal('create-room-modal'); changeServer(); 
+            servers.push({ id: newId, name: name, webhook: "", rsvWebhook: "" }); await setOfflineCurrentRoom(); currentServerId = newId; saveServersLocal(); renderServerSelect(); closeModal('create-room-modal'); changeServer(); 
         }
         async function joinRoom() {
             const id = document.getElementById('join-room-id').value.trim().toUpperCase(); if (!id) return alert("入力してください！"); if (servers.find(s => s.id === id)) return alert("既に参加済みです");
@@ -922,7 +1056,27 @@
             const memberSnap = await database.ref('rooms/' + id + '/members/' + myUserId).once('value');
             if (!memberSnap.exists()) await database.ref('rooms/' + id + '/members/' + myUserId).set({ name: myUserName, role: 'viewer', status: 'online', lastActive: Date.now() });
             else await database.ref('rooms/' + id + '/members/' + myUserId).update({ status: 'online', lastActive: Date.now() });
-            servers.push({ id: id, name: roomName, webhook: "" }); await setOfflineCurrentRoom(); currentServerId = id; saveServersLocal(); renderServerSelect(); closeModal('join-room-modal'); changeServer(); 
+            servers.push({ id: id, name: roomName, webhook: "", rsvWebhook: "" }); await setOfflineCurrentRoom(); currentServerId = id; saveServersLocal(); renderServerSelect(); closeModal('join-room-modal'); changeServer(); 
+        }
+
+        function renderCategoryEditList() { 
+            const listDiv = document.getElementById('category-edit-list'); listDiv.innerHTML = ''; 
+            categories.forEach((cat, i) => listDiv.innerHTML += `<div class="list-item"><span style="font-weight:bold; color:#333;">${cat}</span> <button class="btn-delete-tab" onclick="deleteCategory(${i})">🗑️</button></div>`); 
+        }
+        async function addCategory() { 
+            if (myRole !== 'admin') return; 
+            const input = document.getElementById('new-category-name'); const name = input.value.trim(); 
+            if (!name || categories.includes(name)) return; 
+            categories.push(name); 
+            await database.ref('rooms/' + currentServerId + '/settings/categories').set(categories); 
+            input.value = ''; 
+        }
+        async function deleteCategory(index) { 
+            if (myRole !== 'admin') return; 
+            if (confirm(`削除しますか？`)) { 
+                categories.splice(index, 1); 
+                await database.ref('rooms/' + currentServerId + '/settings/categories').set(categories); 
+            } 
         }
 
         function renderStaffList() { const select = document.getElementById('staff-select'); const val = select.value; select.innerHTML = '<option value="">-- 担当者を選択 --</option>'; staffs.forEach(st => { const opt = document.createElement('option'); opt.value = st; opt.innerText = st; if (st === val) opt.selected = true; select.appendChild(opt); }); if(document.getElementById('staff-modal').style.display === 'flex') renderStaffEditList(); }
@@ -1116,44 +1270,6 @@
             inventory.forEach((item, index) => { if (document.getElementById(`qty-${index}`)) calcTotal(index); }); updateBulkTotal();
         }
 
-        function calcTotal(index) {
-            const item = inventory[index]; const qtyInput = document.getElementById(`qty-${index}`);
-            if (qtyInput) item.inputQty = qtyInput.value; const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
-            
-            if (currentView === 'register') {
-                const tradeSelect = document.getElementById(`trade-${index}`); if (tradeSelect) item.tradeType = tradeSelect.value;
-                const tradeType = item.tradeType || 'sellWhite'; let price = 0, color = '#333';
-                
-                if (tradeType === 'sellWhite') { price = item.priceWhite || 0; color = '#333'; }
-                else if (tradeType === 'sellBlack') { price = item.priceBlack || 0; color = '#333'; }
-                else if (tradeType === 'sellCorp') { price = item.priceCorp || 0; color = '#333'; }
-                else if (tradeType === 'buy') { price = item.buyPrice || 0; color = '#f44336'; }
-                else if (tradeType === 'empSell') { price = item.empSellPrice || 0; color = '#6f42c1'; }
-                else if (tradeType === 'empBuy') { price = item.empBuyPrice || 0; color = '#d63384'; }
-                else { price = 0; color = '#adb5bd'; }
-                
-                if (tradeType.startsWith('sell')) price = Math.max(0, price - DISCOUNT_AMOUNTS[item.discountRank || 'none']);
-                
-                const disp = document.getElementById(`price-disp-${index}`); if (disp) { disp.innerText = `${price.toLocaleString()} 円`; disp.style.color = color; }
-                const dBtn = document.getElementById(`btn-discount-${index}`); if (dBtn) { dBtn.disabled = !tradeType.startsWith('sell'); dBtn.style.opacity = !tradeType.startsWith('sell') ? '0.5' : '1'; }
-                const pBtn = document.getElementById(`btn-premium-${index}`); if (pBtn) { pBtn.disabled = !(tradeType === 'buy' || tradeType.startsWith('sell')); pBtn.style.opacity = !(tradeType === 'buy' || tradeType.startsWith('sell')) ? '0.5' : '1'; }
-
-                const tDisp = document.getElementById(`total-${index}`); 
-                if (tDisp) { 
-                    if (!isNaN(qty) && qty > 0) { 
-                        let premium = 0;
-                        if (tradeType === 'buy' || tradeType.startsWith('sell')) premium = PREMIUM_AMOUNTS[item.premiumRank || 'none'];
-                        let rowTotal = (qty * price) + premium;
-                        const sign = (tradeType === 'buy' || tradeType === 'empBuy' || tradeType === 'stockIn') ? '-' : ''; 
-                        tDisp.innerText = `${sign}${rowTotal.toLocaleString()}円`; tDisp.style.color = color; 
-                    } else { tDisp.innerText = `0円`; tDisp.style.color = '#fd7e14'; } 
-                }
-            } else {
-                const tDisp = document.getElementById(`total-${index}`); if (tDisp) { tDisp.innerText = (!isNaN(qty) && qty > 0) ? `${(qty * (item.priceWhite || 0)).toLocaleString()}円` : `0円`; }
-            }
-            updateBulkTotal();
-        }
-
         function importJSON() {
             if (myRole === 'viewer') return; const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
             input.onchange = e => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = async (ev) => { try { const parsed = JSON.parse(ev.target.result); if (confirm(`上書きしますか？`)) { inventory = parsed; await saveDataToFirebase(); alert("登録完了"); } } catch(err) { alert("エラー"); } }; reader.readAsText(file); }; input.click();
@@ -1168,10 +1284,11 @@
         function renderSidebarTabs() { const container = document.getElementById('sidebar-tabs'); container.innerHTML = ''; menuTabs.forEach(tab => { const div = document.createElement('div'); div.className = `tab ${currentMode === tab.id ? 'active' : ''}`; div.innerHTML = `<span style="font-size: 18px;">${tab.icon}</span> <span>${tab.label}</span>`; div.onclick = () => { currentMode = tab.id; renderSidebarTabs(); if(currentView === 'inventory'){ document.getElementById('mode-title').innerHTML = tab.title; renderTable(); } }; container.appendChild(div); }); }
         async function saveNewTab() { if (myRole !== 'admin') return; const name = document.getElementById('new-tab-name').value.trim(); const icon = document.getElementById('new-tab-icon').value.trim() || '💡'; const op = document.getElementById('new-tab-operation').value; const col = document.getElementById('new-tab-color').value; if (!name) return; menuTabs.push({ id: 'tab_' + Date.now(), icon: icon, label: `${name}`, title: `${icon} ${name}モード`, btnText: `${name}する`, actionText: `${name}`, operation: op, btnClass: col }); await database.ref('rooms/' + currentServerId + '/settings/menuTabs').set(menuTabs); closeModal('tab-modal'); renderSidebarTabs(); }
         async function deleteCurrentTab() { if (myRole !== 'admin' || menuTabs.length <= 1) return; if (confirm(`削除しますか？`)) { menuTabs = menuTabs.filter(m => m.id !== currentMode); await database.ref('rooms/' + currentServerId + '/settings/menuTabs').set(menuTabs); currentMode = menuTabs[0].id; renderSidebarTabs(); } }
+        
         async function loadServers() {
             const saved = localStorage.getItem('fivem_servers');
             if (saved) { servers = JSON.parse(saved); currentServerId = localStorage.getItem('fivem_current_server') || servers[0].id; } 
-            else { const defaultId = generateRoomId(); servers =[{ id: defaultId, name: "メインサーバー", webhook: "" }]; currentServerId = defaultId; saveServersLocal(); await database.ref('rooms/' + defaultId + '/members/' + myUserId).set({ name: myUserName, role: 'admin', status: 'online', lastActive: Date.now() }); await database.ref('rooms/' + defaultId + '/settings').set({ reservationId: Math.floor(10000 + Math.random() * 90000).toString(), reservationStatus: 'open' }); }
+            else { const defaultId = generateRoomId(); servers =[{ id: defaultId, name: "メインサーバー", webhook: "", rsvWebhook: "" }]; currentServerId = defaultId; saveServersLocal(); await database.ref('rooms/' + defaultId + '/members/' + myUserId).set({ name: myUserName, role: 'admin', status: 'online', lastActive: Date.now() }); await database.ref('rooms/' + defaultId + '/settings').set({ reservationId: Math.floor(10000 + Math.random() * 90000).toString(), reservationStatus: 'open' }); }
             renderServerSelect(); applyCurrentServerSettings();
         }
         function saveServersLocal() { localStorage.setItem('fivem_servers', JSON.stringify(servers)); localStorage.setItem('fivem_current_server', currentServerId); }
@@ -1182,7 +1299,17 @@
         async function renameServer() { if (myRole !== 'admin') return; const newName = document.getElementById('server-name-input').value; if (newName.trim() !== "") await database.ref('rooms/' + currentServerId + '/settings/name').set(newName); }
         async function saveWebhook() { if (myRole === 'admin') await database.ref('rooms/' + currentServerId + '/settings/webhook').set(document.getElementById('webhook-url').value); }
         async function deleteServer(isKicked = false) { if (servers.length <= 1 && !isKicked) return alert("退出できません"); if (isKicked || confirm(`退出しますか？`)) { await setOfflineCurrentRoom(); servers = servers.filter(s => s.id !== currentServerId); currentServerId = servers[0] ? servers[0].id : null; saveServersLocal(); renderServerSelect(); changeServer(); } }
-        function applyCurrentServerSettings() { const currentServer = servers.find(s => s.id === currentServerId); if (currentServer) { document.getElementById('server-name-input').value = currentServer.name; document.getElementById('room-id-display').value = currentServer.id; document.getElementById('webhook-url').value = currentServer.webhook || ""; } }
+        
+        function applyCurrentServerSettings() { 
+            const currentServer = servers.find(s => s.id === currentServerId); 
+            if (currentServer) { 
+                document.getElementById('server-name-input').value = currentServer.name; 
+                document.getElementById('room-id-display').value = currentServer.id; 
+                document.getElementById('webhook-url').value = currentServer.webhook || ""; 
+                document.getElementById('rsv-webhook-url').value = currentServer.rsvWebhook || ""; 
+            } 
+        }
+
         function renderCategoryTabs() {
             const container = document.getElementById('category-tabs'); let html = `<div class="category-tab ${currentCategories.includes('すべて') ? 'active' : ''}" onclick="setCategory('すべて')">すべて</div>`;
             categories.forEach(cat => html += `<div class="category-tab ${currentCategories.includes(cat) ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</div>`);
