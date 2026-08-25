@@ -60,12 +60,12 @@
         .input-number { width: 60px; } .price-input { width: 60px; }
         .category-select { padding: 5px; border: none; background-color: transparent; font-size: 14px; cursor: pointer; color: #333; font-weight: bold; }
         
-        .btn-discount { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; background: #fff; font-weight: bold; width: 100%; white-space: nowrap; transition: 0.2s; }
+        .btn-discount, .btn-premium { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; background: #fff; font-weight: bold; width: 100%; white-space: nowrap; transition: 0.2s; }
+        .btn-discount:hover, .btn-premium:hover { opacity: 0.8; }
         .btn-discount.rank-none { color: #6c757d; border-color: #ced4da; }
         .btn-discount.rank-normal { background-color: #e7f1ff; color: #0d6efd; border-color: #b6d4fe; }
         .btn-discount.rank-silver { background-color: #f8f9fa; color: #495057; border-color: #adb5bd; }
         .btn-discount.rank-gold { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
-        .btn-premium { font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; background: #fff; font-weight: bold; width: 100%; white-space: nowrap; transition: 0.2s; }
         .btn-premium.rank-none { color: #6c757d; border-color: #ced4da; }
         .btn-premium.rank-p1000 { background-color: #ffebee; color: #c62828; border-color: #ffcdd2; }
         .btn-premium.rank-p2000 { background-color: #ffcdd2; color: #b71c1c; border-color: #ef9a9a; }
@@ -81,14 +81,9 @@
         .modal-content label { display: block; margin-top: 15px; font-size: 13px; font-weight: bold; color: #333; }
         .modal-content input, .modal-content select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         .list-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding: 6px 0; }
-        #analytics-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; padding-top: 10px; }
-        .org-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid var(--border-color); }
-        .org-card-header { background: #343a40; color: white; padding: 12px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-        .analytics-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: auto; }
-        .analytics-table th { background: #f8f9fa; padding: 10px; border-bottom: 1px solid #dee2e6; text-align: right; color: #495057; font-weight: bold; }
-        .analytics-table td { padding: 10px; border-bottom: 1px solid #f1f3f5; text-align: right; }
         .stripe-table tbody tr:nth-child(odd) td { background-color: #ffffff; }
         .stripe-table tbody tr:nth-child(even) td { background-color: #e6f7ff; }
+        
         body.role-viewer .edit-only { display: none !important; }
         body.role-viewer .admin-only { display: none !important; }
         body.role-viewer .hide-viewer { display: none !important; }
@@ -103,9 +98,60 @@
     </style>
 </head>
 <body class="role-viewer">
-    
+
+    <!-- Discord OCR 読み取り結果適用モーダル -->
+    <div id="ocr-apply-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 380px;">
+            <h3 style="margin-top:0; color: #6f42c1;">📷 Discord読み取り結果の適用</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
+                Discord Botから在庫データが届きました。<br>以下のアイテム個数をPOSに入力しますか？
+            </p>
+            <div id="ocr-apply-list" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 6px; background-color: #fcfcfc;">
+            </div>
+            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-secondary" onclick="cancelOCRApply()" style="width:auto;">キャンセル</button>
+                <button class="btn-add" style="background-color: #6f42c1; width: auto;" onclick="applyDiscordOCR()">💻 POSに適用する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 予約メッセージ（返信）用モーダル -->
+    <div id="rsv-reply-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 380px;">
+            <h3 style="margin-top:0; color: #0d6efd;">💬 お客様へメッセージを送信</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">この予約に対して、予約システム（お客様側）にメッセージを表示します。</p>
+            <input type="hidden" id="reply-rsv-id">
+            <textarea id="reply-message" rows="5" placeholder="準備完了などのメッセージを入力してください..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box;"></textarea>
+            <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-secondary" onclick="closeModal('rsv-reply-modal')" style="width:auto;">キャンセル</button>
+                <button class="btn-add" style="background-color: #0d6efd; width:auto;" onclick="sendRsvReply()">送信する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★ 全体お知らせ(メール)送信モーダル -->
+    <div id="broadcast-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 450px;">
+            <h3 style="margin-top:0; color: #ff9800;">📢 全体お知らせ(メール)の送信</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">お客様の予約ページ（アプリトップ）に表示されるメッセージを送信します。</p>
+
+            <div style="border-bottom: 1px solid #eee; margin-bottom: 15px; padding-bottom: 15px;">
+                <input type="text" id="broadcast-title" placeholder="件名 (例: 本日の営業について)" style="margin-bottom: 10px; font-weight:bold;">
+                <textarea id="broadcast-message" rows="4" placeholder="メッセージ本文を入力..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; box-sizing:border-box; font-family:inherit;"></textarea>
+                <button class="btn-add" style="background-color: #ff9800; width:100%; margin-top: 10px;" onclick="sendBroadcast()">送信する</button>
+            </div>
+
+            <label style="font-size: 12px; font-weight: bold; color: #6c757d;">過去の送信履歴</label>
+            <div id="broadcast-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px; background: #f8f9fa;">
+                <!-- 過去のお知らせリスト -->
+            </div>
+            <div style="margin-top:15px; display:flex; justify-content:flex-end;">
+                <button class="btn-secondary" onclick="closeModal('broadcast-modal')" style="width:auto;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 各種モーダル -->
-    <div id="ocr-apply-modal" class="modal-overlay"><div class="modal-content" style="width: 380px;"><h3 style="margin-top:0; color: #6f42c1;">📷 Discord読み取り結果の適用</h3><p style="font-size: 12px; color: #666; margin-bottom: 15px;">Discord Botから在庫データが届きました。<br>以下のアイテム個数をPOSに入力しますか？</p><div id="ocr-apply-list" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 6px; background-color: #fcfcfc;"></div><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="cancelOCRApply()" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #6f42c1; width: auto;" onclick="applyDiscordOCR()">💻 POSに適用する</button></div></div></div>
     <div id="tab-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #0d6efd;">✨ 新しいタブを作成</h3><label>📌 タブの名前</label><input type="text" id="new-tab-name" placeholder="消費"><label>🔣 アイコン</label><input type="text" id="new-tab-icon" placeholder="💡" maxlength="2"><label>🔽 実行時の在庫の変動</label><select id="new-tab-operation"><option value="sub">在庫を減らす (-)</option><option value="add">在庫を増やす (+)</option><option value="set">数値をそのまま上書き (=)</option></select><label>🎨 実行ボタンの色</label><select id="new-tab-color"><option value="orange">オレンジ色</option><option value="blue">青色</option><option value="green">緑色</option><option value="red">赤色</option></select><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('tab-modal')" style="width:auto;">キャンセル</button><button class="btn-add" onclick="saveNewTab()" style="width:auto;">作成する</button></div></div></div>
     <div id="auth-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #ff9800;">🔑 管理者権限を取得</h3><label>ルームのマスターキー (4桁)</label><input type="password" id="auth-masterkey" placeholder="****" maxlength="4"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('auth-modal')" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #ff9800;" onclick="verifyMasterKey()">認証する</button></div></div></div>
     <div id="create-room-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #4CAF50;">➕ 新しいルームを作る</h3><label>📌 ルームの名前</label><input type="text" id="new-room-name" placeholder="ルーム名を入力"><label style="margin-top:15px; color: #f8cb00;">🔑 マスターキー (4桁)</label><input type="text" id="new-room-masterkey" placeholder="例: 1234" maxlength="4"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('create-room-modal')" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #4CAF50;" onclick="createRoom()">作成する</button></div></div></div>
@@ -118,7 +164,6 @@
     <div id="report-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color: #6f42c1;">📊 月次売上レポート</h3><label>📅 集計する月を選択</label><input type="month" id="report-month-input"><div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;"><button class="btn-secondary" onclick="closeModal('report-modal')" style="width:auto;">キャンセル</button><button class="btn-add" style="background-color: #6f42c1;" onclick="sendMonthlyReport()" style="width:auto;">集計して送信</button></div></div></div>
     <div id="members-modal" class="modal-overlay"><div class="modal-content" style="width: 420px;"><h3 style="margin-top:0; color: #fd7e14;">👥 メンバー権限管理</h3><div id="members-list" style="margin-bottom: 15px; max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px;"></div><div style="margin-top:25px; display:flex; justify-content:flex-end;"><button class="btn-secondary" onclick="closeModal('members-modal')" style="width:auto;">閉じる</button></div></div></div>
 
-    <!-- 会員ランク管理モーダル -->
     <div id="rank-modal" class="modal-overlay">
         <div class="modal-content" style="width: 450px;">
             <h3 style="margin-top:0; color: #198754;">🏆 会員ステータス管理</h3>
@@ -133,7 +178,6 @@
         </div>
     </div>
 
-    <!-- 顧客登録用モーダル -->
     <div id="customer-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 style="margin-top:0; color: #17a2b8;">👥 顧客登録・編集</h3>
@@ -152,7 +196,7 @@
             </select>
             <label>🏆 会員ステータス</label>
             <select id="cus-rank"></select>
-            <label>💰 累計売上 (手動調整用)</label>
+            <label>💰 累計売上 (手手動調整用)</label>
             <input type="number" id="cus-sales" placeholder="0">
             <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
                 <button class="btn-secondary" onclick="closeModal('customer-modal')" style="width:auto;">キャンセル</button>
@@ -209,7 +253,6 @@
             <select id="org-select"></select>
             <button class="btn-staff-edit edit-only" onclick="openModal('org-modal')">⚙️ 組織一覧を編集する</button>
 
-            <!-- 顧客の紐づけ用 -->
             <label style="margin-top: 15px; color:#17a2b8;">👥 会計する顧客 (売上加算用)</label>
             <select id="reg-customer-select" style="border-color:#17a2b8;" onchange="onSelectRegCustomer()">
                 <option value="">-- 選択しない --</option>
@@ -230,13 +273,8 @@
             <label style="margin-top: 10px; display:inline-block;">🔑 マスターキー (4桁)</label>
             <input type="text" id="settings-masterkey" placeholder="****" maxlength="4" onchange="saveMasterKey()">
 
-            <label style="margin-top: 10px; display:inline-block;">🔗 レジ会計用 Discord Webhook URL</label>
+            <label style="margin-top: 10px; display:inline-block;">🔗 Discord Webhook URL</label>
             <input type="password" id="webhook-url" placeholder="https://..." onchange="saveWebhook()">
-            
-            <!-- ★追加部分：予約通知用Webhook -->
-            <label style="margin-top: 10px; display:inline-block; color: #0d6efd;">🔗 予約到着用 Discord Webhook URL</label>
-            <input type="password" id="rsv-webhook-url" placeholder="https://..." onchange="saveRsvWebhook()">
-
             <button class="btn-delete-server" onclick="deleteServer()">🗑️ このルームから退出(削除)</button>
             
             <div style="border-top: 1px dashed #495057; margin: 15px 0;"></div>
@@ -255,8 +293,8 @@
                     <div id="role-badge" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; background: #e9ecef; color: #333;">権限を確認中...</div>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn-secondary edit-only" style="background-color: #6c757d; padding: 8px 15px; font-size: 14px;" onclick="importJSON()">📂 JSONを登録(上書き)</button>
-                    <button class="btn-secondary" style="background-color: #17a2b8; padding: 8px 15px; font-size: 14px;" onclick="exportJSON()">💾 JSONをダウンロード</button>
+                    <button class="btn-secondary edit-only" style="background-color: #6c757d; padding: 8px 15px; font-size: 14px;" onclick="importJSON()">📂 JSON登録</button>
+                    <button class="btn-secondary" style="background-color: #17a2b8; padding: 8px 15px; font-size: 14px;" onclick="exportJSON()">💾 JSON保存</button>
                     <button class="btn-add edit-only" onclick="addNewItem()">+ 新規アイテム追加</button>
                 </div>
             </div>
@@ -279,7 +317,11 @@
         </div>
 
         <div id="rsv-header-actions" class="header-actions" style="display: none; justify-content: space-between; align-items: center; background-color: #e3f2fd; border: 1px solid #90caf9;">
-            <h2 style="margin: 0; font-size: 18px; color: #0d6efd;">📅 予約一覧</h2>
+            <div style="display:flex; align-items:center; gap: 15px;">
+                <h2 style="margin: 0; font-size: 18px; color: #0d6efd;">📅 予約一覧</h2>
+                <!-- ★ 追加：全体お知らせ(メール)送信ボタン -->
+                <button class="btn-add edit-only" style="background-color: #ff9800; padding: 6px 12px; font-size:13px;" onclick="openBroadcastModal()">📢 全体お知らせを送信</button>
+            </div>
             <div style="display:flex; align-items:center; gap: 15px;">
                 <div style="display:flex; align-items:center; gap: 5px;">
                     <label style="font-size:13px; font-weight:bold; color:#6c757d;">予約受付状態:</label>
@@ -336,7 +378,7 @@
                     <th>ご用件・希望内容</th>
                     <th style="width: 100px; text-align:right;">合計金額</th>
                     <th style="width: 110px; text-align:center;">ステータス</th>
-                    <th style="width: 60px; text-align:center;" class="hide-viewer">操作</th>
+                    <th style="width: 100px; text-align:center;" class="hide-viewer">操作</th>
                 </tr>
             </thead>
             <tbody id="rsv-list">
@@ -344,7 +386,6 @@
             </tbody>
         </table>
 
-        <!-- 顧客テーブルに電話番号を追加 -->
         <table id="cus-table" class="stripe-table" style="display: none;">
             <thead>
                 <tr>
@@ -383,6 +424,7 @@
         const database = firebase.database();
         let dbRefInventory = null; let dbRefStaffs = null; let dbRefOrgs = null; let dbRefSettings = null; let dbRefMembers = null; let dbRefLogs = null;
         let dbRefReservations = null; let dbRefCustomers = null; let dbRefNewCustomers = null;
+        let dbRefBroadcasts = null; // 全体お知らせ用
 
         let myUserId = localStorage.getItem('fivem_user_id');
         if (!myUserId) { myUserId = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now(); localStorage.setItem('fivem_user_id', myUserId); }
@@ -406,9 +448,10 @@
         let servers = []; let currentServerId = null; let staffs = []; let orgs = []; let customers = [];
         let currentView = 'inventory'; let isEditing = false; let actionLogs = []; 
         let currentReservationId = null; let currentRsvStatus = 'open'; let reservationsList = []; 
+        let broadcastsList = []; // 全体お知らせ用
 
-        document.addEventListener('focusin', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = true; });
-        document.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') isEditing = false; });
+        document.addEventListener('focusin', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') isEditing = true; });
+        document.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') isEditing = false; });
 
         window.onload = function() {
             document.getElementById('my-name-input').value = myUserName;
@@ -708,28 +751,12 @@
             
             dbRefReservations = database.ref('public_reservations/' + currentReservationId);
             
-            // 予約リクエスト監視 (画面表示用)
             dbRefReservations.on('value', (snapshot) => {
                 const data = snapshot.val(); reservationsList = [];
                 if (data) { Object.keys(data).forEach(key => reservationsList.push({ id: key, ...data[key] })); reservationsList.sort((a, b) => b.createdAt - a.createdAt); }
                 if (currentView === 'reservation') renderReservations();
             });
 
-            // ★ 新規予約が来た際のDiscord通知 (多重通知防止処理つき)
-            dbRefReservations.on('child_added', (snapshot) => {
-                const rsv = snapshot.val();
-                if (rsv.status === 'new' && !rsv.notified) {
-                    snapshot.ref.child('notified').transaction((currentVal) => {
-                        if (currentVal === null || currentVal === false) return true;
-                        return; 
-                    }, (error, committed) => {
-                        if (error) console.error("予約通知のトランザクションに失敗", error);
-                        else if (committed) sendRsvWebhook(rsv);
-                    });
-                }
-            });
-
-            // ★ 新規顧客リクエスト監視 (多重登録防止処理つき)
             dbRefNewCustomers = database.ref('public_new_customers/' + currentReservationId);
             dbRefNewCustomers.on('child_added', (snap) => {
                 if (myRole === 'viewer') return; 
@@ -758,31 +785,106 @@
             });
         }
 
-        // 予約をDiscordへ送信する関数
-        async function sendRsvWebhook(rsv) {
-            const server = servers.find(s => s.id === currentServerId);
-            if (!server || !server.rsvWebhook) return;
+        // --- ★ 予約への返信（メッセージ）機能 ---
+        function openReplyModal(rsvId, currentReply) {
+            document.getElementById('reply-rsv-id').value = rsvId;
+            document.getElementById('reply-message').value = currentReply || '';
+            openModal('rsv-reply-modal');
+        }
 
-            const rankDef = customRanks.find(r => r.id === rsv.rankId) || { name: '未確認' };
-            const totalAmountStr = rsv.totalAmount !== undefined ? `${rsv.totalAmount.toLocaleString()} 円` : '-';
+        async function sendRsvReply() {
+            if (myRole === 'viewer' || !currentReservationId) return;
+            const rsvId = document.getElementById('reply-rsv-id').value;
+            const msg = document.getElementById('reply-message').value.trim();
             
-            const embed = {
-                title: `📅 新しい予約・依頼が届きました！`,
-                color: 3447003, // 青色
-                description: `**お名前:** ${rsv.name} [${rankDef.name}]\n**市民ID:** ${rsv.citizenId || "不明"}\n**合計金額:** ${totalAmountStr}\n\n**📝 ご用件・希望内容:**\n${rsv.detail || "記載なし"}`,
-                timestamp: new Date(rsv.createdAt).toISOString()
-            };
-
             try {
-                await fetch(server.rsvWebhook, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ embeds: [embed] }) 
+                await database.ref('public_reservations/' + currentReservationId + '/' + rsvId).update({
+                    reply: msg,
+                    replyAt: firebase.database.ServerValue.TIMESTAMP
                 });
-            } catch (e) {
-                console.error("予約Webhookの送信に失敗しました", e);
+                alert("メッセージを送信・保存しました！");
+                closeModal('rsv-reply-modal');
+            } catch(e) {
+                alert("送信に失敗しました");
             }
         }
+
+        // --- ★ 全体お知らせ(メール)送信機能 ---
+        function listenToBroadcasts() {
+            if (dbRefBroadcasts) dbRefBroadcasts.off();
+            if (!currentReservationId) return;
+            dbRefBroadcasts = database.ref('public_broadcasts/' + currentReservationId);
+            dbRefBroadcasts.on('value', snap => {
+                const data = snap.val();
+                broadcastsList = [];
+                if (data) {
+                    Object.keys(data).forEach(k => broadcastsList.push({ id: k, ...data[k] }));
+                    broadcastsList.sort((a,b) => b.createdAt - a.createdAt);
+                }
+                if (document.getElementById('broadcast-modal').style.display === 'flex') {
+                    renderBroadcastList();
+                }
+            });
+        }
+
+        function openBroadcastModal() {
+            renderBroadcastList();
+            openModal('broadcast-modal');
+        }
+
+        function renderBroadcastList() {
+            const listDiv = document.getElementById('broadcast-list');
+            listDiv.innerHTML = '';
+            if (broadcastsList.length === 0) {
+                listDiv.innerHTML = '<div style="text-align:center; font-size:12px; color:#999; padding: 10px;">送信履歴はありません</div>';
+                return;
+            }
+            broadcastsList.forEach(b => {
+                const d = new Date(b.createdAt);
+                const dateStr = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                
+                // 表示崩れ防止
+                const safeBody = b.body ? b.body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, '<br>') : '';
+                const safeTitle = b.title ? b.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+
+                listDiv.innerHTML += `
+                    <div style="border-bottom: 1px solid #dee2e6; padding: 10px 0; display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex-grow:1; padding-right:10px;">
+                            <div style="font-weight:bold; font-size:13px; color:#0d6efd;">${safeTitle} <span style="font-size:10px; font-weight:normal; color:#6c757d;">(${dateStr})</span></div>
+                            <div style="font-size:11px; color:#495057; margin-top:5px;">${safeBody}</div>
+                        </div>
+                        <button class="btn-delete-tab edit-only" style="padding:4px 8px;" onclick="deleteBroadcast('${b.id}')">削除</button>
+                    </div>
+                `;
+            });
+        }
+
+        async function sendBroadcast() {
+            if (myRole === 'viewer' || !currentReservationId) return;
+            const title = document.getElementById('broadcast-title').value.trim();
+            const body = document.getElementById('broadcast-message').value.trim();
+            if (!title || !body) return alert("件名と本文を入力してください。");
+
+            try {
+                await database.ref('public_broadcasts/' + currentReservationId).push({
+                    title: title,
+                    body: body,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    sender: myUserName
+                });
+                document.getElementById('broadcast-title').value = '';
+                document.getElementById('broadcast-message').value = '';
+                alert("全体お知らせを送信しました！");
+            } catch(e) { alert("送信に失敗しました"); }
+        }
+
+        async function deleteBroadcast(id) {
+            if (myRole === 'viewer' || !currentReservationId) return;
+            if (confirm("このお知らせを削除しますか？\n(お客様の画面からも消えます)")) {
+                await database.ref('public_broadcasts/' + currentReservationId + '/' + id).remove();
+            }
+        }
+
 
         function renderReservations() {
             if (currentView !== 'reservation') return;
@@ -800,6 +902,11 @@
                 const rankDef = customRanks.find(r => r.id === rsv.rankId) || { name: '未確認' };
                 const totalAmountStr = rsv.totalAmount !== undefined ? `${rsv.totalAmount.toLocaleString()} 円` : '-';
 
+                const hasReply = rsv.reply && rsv.reply.trim() !== '';
+                const replyBtnStyle = hasReply ? "border-color:#198754; color:#198754;" : "border-color:#0d6efd; color:#0d6efd;";
+                const replyBtnText = hasReply ? "💬 既読/返信済" : "💬 返信";
+                const safeReply = rsv.reply ? rsv.reply.replace(/'/g, "\\'").replace(/\n/g, '\\n') : '';
+
                 tr.innerHTML = `
                     <td style="font-size:12px; color:#6c757d; font-weight:bold;">${dateStr}</td>
                     <td style="font-weight:bold; color:#333;">${rsv.name}<br><span style="font-size:11px; color:#6c757d;">[${rankDef.name}]</span></td>
@@ -807,7 +914,10 @@
                     <td style="font-size:13px; white-space:pre-wrap;">${rsv.detail}</td>
                     <td style="font-weight:bold; color:#d63384; text-align:right;">${totalAmountStr}</td>
                     <td style="text-align:center;">${statusHtml}</td>
-                    <td style="text-align:center;" class="hide-viewer"><button class="btn-delete-tab edit-only" onclick="deleteRsv('${rsv.id}')">削除</button></td>
+                    <td style="text-align:center;" class="hide-viewer">
+                        <button class="btn-delete-tab edit-only" style="margin-bottom:4px; width:100%; font-weight:bold; ${replyBtnStyle}" onclick="openReplyModal('${rsv.id}', '${safeReply}')">${replyBtnText}</button>
+                        <button class="btn-delete-tab edit-only" style="width:100%;" onclick="deleteRsv('${rsv.id}')">削除</button>
+                    </td>
                 `; tbody.appendChild(tr);
             });
         }
@@ -861,9 +971,8 @@
 
         function listenToFirebase() {
             if (!currentServerId) return;
-            if (dbRefInventory) dbRefInventory.off(); if (dbRefStaffs) dbRefStaffs.off(); if (dbRefOrgs) dbRefOrgs.off(); if (dbRefSettings) dbRefSettings.off(); if (dbRefMembers) dbRefMembers.off(); if (dbRefLogs) dbRefLogs.off(); if (dbRefCustomers) dbRefCustomers.off();
+            if (dbRefInventory) dbRefInventory.off(); if (dbRefStaffs) dbRefStaffs.off(); if (dbRefOrgs) dbRefOrgs.off(); if (dbRefSettings) dbRefSettings.off(); if (dbRefMembers) dbRefMembers.off(); if (dbRefLogs) dbRefLogs.off(); if (dbRefCustomers) dbRefCustomers.off(); if (dbRefBroadcasts) dbRefBroadcasts.off();
             
-            // Discordからの読み取り通知を監視
             database.ref('rooms/' + currentServerId + '/pending_ocr').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
@@ -935,9 +1044,10 @@
                         if (currentReservationId !== data.reservationId) {
                             currentReservationId = data.reservationId; document.getElementById('my-rsv-id').value = currentReservationId;
                             listenToReservations(); 
+                            listenToBroadcasts(); // 全体お知らせの購読を開始
                         }
                     } else {
-                        currentReservationId = null; document.getElementById('my-rsv-id').value = "未設定"; reservationsList = []; if (currentView === 'reservation') renderReservations();
+                        currentReservationId = null; document.getElementById('my-rsv-id').value = "未設定"; reservationsList = []; broadcastsList = []; if (currentView === 'reservation') renderReservations();
                     }
 
                     if (data.customRanks) {
@@ -963,12 +1073,6 @@
                     if (idx !== -1) {
                         if (data.name && document.activeElement.id !== 'server-name-input') { servers[idx].name = data.name; document.getElementById('server-name-input').value = data.name; }
                         if (data.webhook !== undefined && document.activeElement.id !== 'webhook-url') { servers[idx].webhook = data.webhook; document.getElementById('webhook-url').value = data.webhook; }
-                        
-                        if (data.rsvWebhook !== undefined && document.activeElement.id !== 'rsv-webhook-url') { 
-                            servers[idx].rsvWebhook = data.rsvWebhook; 
-                            document.getElementById('rsv-webhook-url').value = data.rsvWebhook; 
-                        }
-
                         saveServersLocal(); renderServerSelect();
                     }
                 }
@@ -978,7 +1082,6 @@
             dbRefLogs = database.ref('rooms/' + currentServerId + '/logs'); dbRefLogs.limitToLast(100).on('value', snap => { const data = snap.val(); actionLogs = []; if (data) Object.keys(data).forEach(key => actionLogs.push({ id: key, ...data[key] })); actionLogs.sort((a, b) => b.timestamp - a.timestamp); if (currentView === 'log') renderLogs(); });
         }
 
-        // --- Discord OCR適用処理 ---
         function applyDiscordOCR() {
             if (!currentPendingOCRData) return;
             if (myRole === 'viewer') {
@@ -1027,13 +1130,6 @@
         async function verifyMasterKey() { const inputKey = document.getElementById('auth-masterkey').value.trim(); if (inputKey === currentMasterKey) { await database.ref('rooms/' + currentServerId + '/members/' + myUserId + '/role').set('admin'); alert("✅ 管理者権限を取得しました！"); closeModal('auth-modal'); } else alert("❌ マスターキーが違います！"); }
         async function saveMasterKey() { if (myRole !== 'admin') return; const newKey = document.getElementById('settings-masterkey').value.trim(); if (!/^\d{4}$/.test(newKey)) return alert("4桁の数字にしてください。"); await database.ref('rooms/' + currentServerId + '/settings/masterKey').set(newKey); alert("更新しました"); }
         
-        // 予約Webhookの保存機能
-        async function saveRsvWebhook() { 
-            if (myRole === 'admin') {
-                await database.ref('rooms/' + currentServerId + '/settings/rsvWebhook').set(document.getElementById('rsv-webhook-url').value); 
-            }
-        }
-
         function openMembersModal() { document.getElementById('members-modal').style.display = 'flex'; renderMembersEditList(); }
         function renderMembersEditList() {
             const listDiv = document.getElementById('members-list'); listDiv.innerHTML = '';
@@ -1049,9 +1145,9 @@
             const name = document.getElementById('new-room-name').value.trim(); const mKey = document.getElementById('new-room-masterkey').value.trim();
             if (!name || !mKey || !/^\d{4}$/.test(mKey)) return alert("名前と4桁のマスターキーを入力してください！");
             const newId = generateRoomId(); const rsvId = Math.floor(10000 + Math.random() * 90000).toString(); 
-            const initialSettings = { name: name, webhook: "", rsvWebhook: "", masterKey: mKey, categories: DEFAULT_CATEGORIES, reservationId: rsvId, reservationStatus: 'open', menuTabs: menuTabs };
+            const initialSettings = { name: name, webhook: "", masterKey: mKey, categories: DEFAULT_CATEGORIES, reservationId: rsvId, reservationStatus: 'open', menuTabs: menuTabs };
             await database.ref('rooms/' + newId + '/settings').set(initialSettings); await database.ref('rooms/' + newId + '/members/' + myUserId).set({ name: myUserName, role: 'admin', status: 'online', lastActive: Date.now() });
-            servers.push({ id: newId, name: name, webhook: "", rsvWebhook: "" }); await setOfflineCurrentRoom(); currentServerId = newId; saveServersLocal(); renderServerSelect(); closeModal('create-room-modal'); changeServer(); 
+            servers.push({ id: newId, name: name, webhook: "" }); await setOfflineCurrentRoom(); currentServerId = newId; saveServersLocal(); renderServerSelect(); closeModal('create-room-modal'); changeServer(); 
         }
         async function joinRoom() {
             const id = document.getElementById('join-room-id').value.trim().toUpperCase(); if (!id) return alert("入力してください！"); if (servers.find(s => s.id === id)) return alert("既に参加済みです");
@@ -1059,7 +1155,7 @@
             const memberSnap = await database.ref('rooms/' + id + '/members/' + myUserId).once('value');
             if (!memberSnap.exists()) await database.ref('rooms/' + id + '/members/' + myUserId).set({ name: myUserName, role: 'viewer', status: 'online', lastActive: Date.now() });
             else await database.ref('rooms/' + id + '/members/' + myUserId).update({ status: 'online', lastActive: Date.now() });
-            servers.push({ id: id, name: roomName, webhook: "", rsvWebhook: "" }); await setOfflineCurrentRoom(); currentServerId = id; saveServersLocal(); renderServerSelect(); closeModal('join-room-modal'); changeServer(); 
+            servers.push({ id: id, name: roomName, webhook: "" }); await setOfflineCurrentRoom(); currentServerId = id; saveServersLocal(); renderServerSelect(); closeModal('join-room-modal'); changeServer(); 
         }
 
         function renderCategoryEditList() { 
