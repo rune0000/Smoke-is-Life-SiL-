@@ -129,11 +129,11 @@
         </div>
     </div>
 
-    <!-- ★ 全体お知らせ(メール)送信モーダル -->
+    <!-- ★ 全体お知らせ(メール)送信モーダル (保存先を全体共通に変更) -->
     <div id="broadcast-modal" class="modal-overlay">
         <div class="modal-content" style="width: 450px;">
             <h3 style="margin-top:0; color: #ff9800;">📢 全体お知らせ(メール)の送信</h3>
-            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">お客様の予約ページ（アプリトップ）に表示されるメッセージを送信します。</p>
+            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">全店舗共通で、お客様の予約ページに表示されるメッセージを送信します。</p>
 
             <div style="border-bottom: 1px solid #eee; margin-bottom: 15px; padding-bottom: 15px;">
                 <input type="text" id="broadcast-title" placeholder="件名 (例: 本日の営業について)" style="margin-bottom: 10px; font-weight:bold;">
@@ -196,7 +196,7 @@
             </select>
             <label>🏆 会員ステータス</label>
             <select id="cus-rank"></select>
-            <label>💰 累計売上 (手手動調整用)</label>
+            <label>💰 累計売上 (手動調整用)</label>
             <input type="number" id="cus-sales" placeholder="0">
             <div style="margin-top:25px; display:flex; justify-content:flex-end; gap:10px;">
                 <button class="btn-secondary" onclick="closeModal('customer-modal')" style="width:auto;">キャンセル</button>
@@ -461,7 +461,13 @@
                 { id: 'tab_loss', icon: '🗑️', label: 'ロス (破棄)', title: '🗑️ 破棄・ロスモード', btnText: '破棄する', actionText: '破棄(減少)', operation: 'sub', btnClass: 'red' },
                 { id: 'tab_set', icon: '📝', label: '棚卸し (上書き)', title: '📝 棚卸しモード', btnText: '上書き更新', actionText: '棚卸し(上書き)', operation: 'set', btnClass: 'blue' }
             ];
-            loadServers(); listenToFirebase(); switchView('inventory'); 
+            loadServers(); 
+            listenToFirebase(); 
+            switchView('inventory'); 
+            
+            // ★全体お知らせを監視開始（サイト全体共通）
+            listenToBroadcasts();
+
             const now = new Date(); document.getElementById('report-month-input').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         };
 
@@ -809,11 +815,12 @@
             }
         }
 
-        // --- ★ 全体お知らせ(メール)送信機能 ---
+        // --- ★ 全体お知らせ(メール)送信機能 (保存先を global に変更) ---
         function listenToBroadcasts() {
             if (dbRefBroadcasts) dbRefBroadcasts.off();
-            if (!currentReservationId) return;
-            dbRefBroadcasts = database.ref('public_broadcasts/' + currentReservationId);
+            
+            // global (サイト全体) に保存されているお知らせを監視
+            dbRefBroadcasts = database.ref('public_broadcasts/global');
             dbRefBroadcasts.on('value', snap => {
                 const data = snap.val();
                 broadcastsList = [];
@@ -843,7 +850,6 @@
                 const d = new Date(b.createdAt);
                 const dateStr = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                 
-                // 表示崩れ防止
                 const safeBody = b.body ? b.body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\n/g, '<br>') : '';
                 const safeTitle = b.title ? b.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
 
@@ -860,13 +866,14 @@
         }
 
         async function sendBroadcast() {
-            if (myRole === 'viewer' || !currentReservationId) return;
+            if (myRole === 'viewer') return;
             const title = document.getElementById('broadcast-title').value.trim();
             const body = document.getElementById('broadcast-message').value.trim();
             if (!title || !body) return alert("件名と本文を入力してください。");
 
             try {
-                await database.ref('public_broadcasts/' + currentReservationId).push({
+                // global パスに保存する
+                await database.ref('public_broadcasts/global').push({
                     title: title,
                     body: body,
                     createdAt: firebase.database.ServerValue.TIMESTAMP,
@@ -879,9 +886,9 @@
         }
 
         async function deleteBroadcast(id) {
-            if (myRole === 'viewer' || !currentReservationId) return;
+            if (myRole === 'viewer') return;
             if (confirm("このお知らせを削除しますか？\n(お客様の画面からも消えます)")) {
-                await database.ref('public_broadcasts/' + currentReservationId + '/' + id).remove();
+                await database.ref('public_broadcasts/global/' + id).remove();
             }
         }
 
@@ -971,7 +978,7 @@
 
         function listenToFirebase() {
             if (!currentServerId) return;
-            if (dbRefInventory) dbRefInventory.off(); if (dbRefStaffs) dbRefStaffs.off(); if (dbRefOrgs) dbRefOrgs.off(); if (dbRefSettings) dbRefSettings.off(); if (dbRefMembers) dbRefMembers.off(); if (dbRefLogs) dbRefLogs.off(); if (dbRefCustomers) dbRefCustomers.off(); if (dbRefBroadcasts) dbRefBroadcasts.off();
+            if (dbRefInventory) dbRefInventory.off(); if (dbRefStaffs) dbRefStaffs.off(); if (dbRefOrgs) dbRefOrgs.off(); if (dbRefSettings) dbRefSettings.off(); if (dbRefMembers) dbRefMembers.off(); if (dbRefLogs) dbRefLogs.off(); if (dbRefCustomers) dbRefCustomers.off();
             
             database.ref('rooms/' + currentServerId + '/pending_ocr').on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -1044,10 +1051,9 @@
                         if (currentReservationId !== data.reservationId) {
                             currentReservationId = data.reservationId; document.getElementById('my-rsv-id').value = currentReservationId;
                             listenToReservations(); 
-                            listenToBroadcasts(); // 全体お知らせの購読を開始
                         }
                     } else {
-                        currentReservationId = null; document.getElementById('my-rsv-id').value = "未設定"; reservationsList = []; broadcastsList = []; if (currentView === 'reservation') renderReservations();
+                        currentReservationId = null; document.getElementById('my-rsv-id').value = "未設定"; reservationsList = []; if (currentView === 'reservation') renderReservations();
                     }
 
                     if (data.customRanks) {
@@ -1367,6 +1373,44 @@
                 tbody.appendChild(tr);
             });
             inventory.forEach((item, index) => { if (document.getElementById(`qty-${index}`)) calcTotal(index); }); updateBulkTotal();
+        }
+
+        function calcTotal(index) {
+            const item = inventory[index]; const qtyInput = document.getElementById(`qty-${index}`);
+            if (qtyInput) item.inputQty = qtyInput.value; const qty = Number(String(item.inputQty || '').replace(/,/g, '')); 
+            
+            if (currentView === 'register') {
+                const tradeSelect = document.getElementById(`trade-${index}`); if (tradeSelect) item.tradeType = tradeSelect.value;
+                const tradeType = item.tradeType || 'sellWhite'; let price = 0, color = '#333';
+                
+                if (tradeType === 'sellWhite') { price = item.priceWhite || 0; color = '#333'; }
+                else if (tradeType === 'sellBlack') { price = item.priceBlack || 0; color = '#333'; }
+                else if (tradeType === 'sellCorp') { price = item.priceCorp || 0; color = '#333'; }
+                else if (tradeType === 'buy') { price = item.buyPrice || 0; color = '#f44336'; }
+                else if (tradeType === 'empSell') { price = item.empSellPrice || 0; color = '#6f42c1'; }
+                else if (tradeType === 'empBuy') { price = item.empBuyPrice || 0; color = '#d63384'; }
+                else { price = 0; color = '#adb5bd'; }
+                
+                if (tradeType.startsWith('sell')) price = Math.max(0, price - DISCOUNT_AMOUNTS[item.discountRank || 'none']);
+                
+                const disp = document.getElementById(`price-disp-${index}`); if (disp) { disp.innerText = `${price.toLocaleString()} 円`; disp.style.color = color; }
+                const dBtn = document.getElementById(`btn-discount-${index}`); if (dBtn) { dBtn.disabled = !tradeType.startsWith('sell'); dBtn.style.opacity = !tradeType.startsWith('sell') ? '0.5' : '1'; }
+                const pBtn = document.getElementById(`btn-premium-${index}`); if (pBtn) { pBtn.disabled = !(tradeType === 'buy' || tradeType.startsWith('sell')); pBtn.style.opacity = !(tradeType === 'buy' || tradeType.startsWith('sell')) ? '0.5' : '1'; }
+
+                const tDisp = document.getElementById(`total-${index}`); 
+                if (tDisp) { 
+                    if (!isNaN(qty) && qty > 0) { 
+                        let premium = 0;
+                        if (tradeType === 'buy' || tradeType.startsWith('sell')) premium = PREMIUM_AMOUNTS[item.premiumRank || 'none'];
+                        let rowTotal = (qty * price) + premium;
+                        const sign = (tradeType === 'buy' || tradeType === 'empBuy' || tradeType === 'stockIn') ? '-' : ''; 
+                        tDisp.innerText = `${sign}${rowTotal.toLocaleString()}円`; tDisp.style.color = color; 
+                    } else { tDisp.innerText = `0円`; tDisp.style.color = '#fd7e14'; } 
+                }
+            } else {
+                const tDisp = document.getElementById(`total-${index}`); if (tDisp) { tDisp.innerText = (!isNaN(qty) && qty > 0) ? `${(qty * (item.priceWhite || 0)).toLocaleString()}円` : `0円`; }
+            }
+            updateBulkTotal();
         }
 
         function importJSON() {
